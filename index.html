@@ -1,0 +1,230 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <title>Умный Бизнес CRM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              ios: {
+                bg: 'var(--ios-bg)',
+                card: 'var(--ios-card)',
+                header: 'var(--ios-header)',
+                accent: 'var(--ios-accent)',
+                text: 'var(--ios-text)',       
+                primary: 'var(--ios-text)',    
+                secondary: 'var(--ios-text-secondary)',
+                border: 'var(--ios-border)',
+                sub: 'var(--ios-sub-bg)',
+              }
+            },
+            boxShadow: {
+              'ios': '0 4px 24px 0 rgba(0, 0, 0, 0.05)',
+              'ios-heavy': '0 20px 60px -10px rgba(0, 0, 0, 0.25)',
+              'ios-inner': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
+            },
+            zIndex: {
+              'sidebar': '40',
+              'navbar': '50',
+              'overlay': '90',
+              'modal': '100',
+              'toast': '200',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        /* Precision Global Theme Engine */
+        :root {
+          /* Default Fallback (Gray) */
+          --ios-bg: #F2F2F7;
+          --ios-bg-image: linear-gradient(135deg, #E5E5EA 0%, #F2F2F7 100%);
+          --ios-card: #FFFFFF; /* Solid for best readability */
+          --ios-header: rgba(255, 255, 255, 0.98);
+          --ios-sub-bg: #F2F2F7;
+          --ios-text: #000000;
+          --ios-text-secondary: #8E8E93;
+          --ios-border: rgba(0, 0, 0, 0.12);
+          --ios-accent: #007AFF;
+          transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* 1. CLASSIC (Default iOS - Light) */
+        .theme-gray {
+          --ios-bg: #F2F2F7;
+          --ios-bg-image: linear-gradient(135deg, #E5E5EA 0%, #F2F2F7 100%);
+          --ios-card: rgba(255, 255, 255, 0.95);
+          --ios-header: rgba(255, 255, 255, 0.98);
+          --ios-sub-bg: rgba(0, 0, 0, 0.05);
+          --ios-text: #1C1C1E;
+          --ios-text-secondary: #8E8E93;
+          --ios-border: rgba(0, 0, 0, 0.1);
+          --ios-accent: #007AFF;
+        }
+
+        /* 2. ROYAL (Deep Navy - Dark) */
+        .theme-royal {
+          --ios-bg: #0B1120;
+          --ios-bg-image: linear-gradient(180deg, #111827 0%, #0B1120 100%);
+          --ios-card: #1E293B; /* Solid prevents bleed */
+          --ios-header: #1E293B;
+          --ios-sub-bg: rgba(0, 0, 0, 0.3);
+          --ios-text: #FFFFFF;
+          --ios-text-secondary: #94A3B8;
+          --ios-border: rgba(255, 255, 255, 0.1);
+          --ios-accent: #38BDF8;
+        }
+
+        /* 3. OLIVE (Nature - Light) */
+        .theme-olive {
+          --ios-bg: #F5F7F2;
+          --ios-bg-image: linear-gradient(135deg, #E8EFE0 0%, #F5F7F2 100%);
+          --ios-card: rgba(255, 255, 255, 0.95);
+          --ios-header: rgba(255, 255, 255, 0.98);
+          --ios-sub-bg: rgba(65, 82, 35, 0.08);
+          --ios-text: #2D3820;
+          --ios-text-secondary: #6B7C55;
+          --ios-border: rgba(65, 82, 35, 0.15);
+          --ios-accent: #658C34;
+        }
+
+        /* 4. CHAMPAGNE (Boutique - Warm) */
+        .theme-champagne {
+          --ios-bg: #FFFCF7;
+          --ios-bg-image: linear-gradient(135deg, #F9F3EA 0%, #FFFCF7 100%);
+          --ios-card: rgba(255, 255, 255, 0.98);
+          --ios-header: #FFFFFF;
+          --ios-sub-bg: rgba(140, 100, 60, 0.08);
+          --ios-text: #423022;
+          --ios-text-secondary: #9C836E;
+          --ios-border: rgba(140, 100, 60, 0.15);
+          --ios-accent: #C5A065;
+        }
+
+        /* 5. NORDIC (OLED Black - Dark) */
+        .theme-nordic {
+          --ios-bg: #000000;
+          --ios-bg-image: linear-gradient(180deg, #121212 0%, #000000 100%);
+          --ios-card: #1C1C1E; /* Solid */
+          --ios-header: #1C1C1E;
+          --ios-sub-bg: #2C2C2E;
+          --ios-text: #FFFFFF;
+          --ios-text-secondary: #8E8E93;
+          --ios-border: #38383A;
+          --ios-accent: #0A84FF;
+        }
+
+        * {
+          -webkit-tap-highlight-color: transparent;
+          box-sizing: border-box;
+        }
+
+        body { 
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+          margin: 0; padding: 0; min-height: 100vh;
+          color: var(--ios-text); background-color: var(--ios-bg);
+          overflow-x: hidden;
+          overscroll-behavior-y: none;
+        }
+
+        /* Background pattern */
+        body::before {
+          content: ""; position: fixed; inset: 0;
+          background: var(--ios-bg-image); background-size: cover; background-position: center;
+          z-index: -1;
+          pointer-events: none;
+        }
+
+        /* Utility Classes */
+        .bg-ios-card { 
+          background-color: var(--ios-card) !important; 
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+        }
+        
+        .bg-ios-header {
+           background-color: var(--ios-header) !important;
+           backdrop-filter: blur(40px);
+           -webkit-backdrop-filter: blur(40px);
+           border-bottom: 1px solid var(--ios-border);
+        }
+
+        .bg-ios-sub { background-color: var(--ios-sub-bg) !important; }
+        .border-ios { border: 1px solid var(--ios-border) !important; }
+        .text-ios-accent { color: var(--ios-accent) !important; }
+        .bg-ios-accent { background-color: var(--ios-accent) !important; }
+        .text-ios-primary { color: var(--ios-text) !important; }
+
+        /* Force input colors */
+        input, select, textarea {
+          color: var(--ios-text) !important;
+          background-color: var(--ios-sub-bg) !important;
+          border: 1px solid var(--ios-border) !important;
+        }
+        input::placeholder { color: var(--ios-text-secondary); opacity: 0.7; }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--ios-border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--ios-text-secondary); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Recharts */
+        .recharts-cartesian-grid-horizontal line, .recharts-cartesian-grid-vertical line { stroke: var(--ios-border); }
+        .recharts-text { fill: var(--ios-text-secondary); font-weight: 600; font-size: 10px; }
+        
+        /* Modal Backdrop */
+        .modal-backdrop {
+          position: fixed;
+          inset: 0;
+          background-color: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          z-index: 100; /* High z-index defined in CSS to ensure it beats Tailwind utilities if needed */
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        @keyframes ios-slide {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-ios-slide { animation: ios-slide 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        
+        @keyframes modal-pop {
+           from { opacity: 0; transform: scale(0.95); }
+           to { opacity: 1; transform: scale(1); }
+        }
+        .animate-modal { animation: modal-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+        /* Tactile Button Feedback */
+        .spring-press { transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s; }
+        .spring-press:active { transform: scale(0.96); opacity: 0.9; }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+    "recharts": "https://esm.sh/recharts@^3.6.0"
+  }
+}
+</script>
+</head>
+<body class="theme-gray">
+    <div id="root"></div>
+</body>
+</html>
