@@ -1,18 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { getBusinessInsights } from '../services/geminiService';
-import { Product, Customer, Branch } from '../types';
 import { Tooltip, ResponsiveContainer, AreaChart, Area, XAxis, BarChart, Bar } from 'recharts';
+import { useInventory } from '../contexts/InventoryContext';
+import { useCRM } from '../contexts/CRMContext';
+import { useApp } from '../contexts/AppContext';
 
-interface DashboardProps {
-  products: Product[];
-  customers: Customer[];
-  branches: Branch[];
-}
-
-const Dashboard: React.FC<DashboardProps> = ({ products, customers, branches }) => {
+const Dashboard: React.FC = () => {
+  const { products } = useInventory();
+  const { customers } = useCRM();
+  const { activeCompany } = useApp();
+  const branches = activeCompany.branches;
   const [insights, setInsights] = useState<string>('Провожу глубокий анализ данных...');
-  
+
   const soldProducts = products.filter(p => p.status === 'sold');
   const revenue = soldProducts.reduce((acc, p) => acc + p.price, 0);
   const costs = soldProducts.reduce((acc, p) => acc + (p.costPrice || p.price * 0.6), 0);
@@ -20,12 +20,12 @@ const Dashboard: React.FC<DashboardProps> = ({ products, customers, branches }) 
   const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : '0';
 
   // Dummy data for chart if empty
-  const chartData = soldProducts.length > 0 
+  const chartData = soldProducts.length > 0
     ? soldProducts.map((p, i) => ({ n: i.toString(), v: p.price, c: p.costPrice || 0 }))
     : [
-        { n: 'Пн', v: 4000, c: 2000 }, { n: 'Вт', v: 3000, c: 1800 }, { n: 'Ср', v: 5000, c: 2200 },
-        { n: 'Чт', v: 2780, c: 1500 }, { n: 'Пт', v: 1890, c: 900 }, { n: 'Сб', v: 6390, c: 2500 },
-      ];
+      { n: 'Пн', v: 4000, c: 2000 }, { n: 'Вт', v: 3000, c: 1800 }, { n: 'Ср', v: 5000, c: 2200 },
+      { n: 'Чт', v: 2780, c: 1500 }, { n: 'Пт', v: 1890, c: 900 }, { n: 'Сб', v: 6390, c: 2500 },
+    ];
 
   useEffect(() => {
     const fetchInsights = async () => {
@@ -53,8 +53,8 @@ const Dashboard: React.FC<DashboardProps> = ({ products, customers, branches }) 
           <p className="text-[10px] font-black text-ios-secondary uppercase tracking-[0.2em] mt-1">Данные по всей сети</p>
         </div>
         <div className="bg-ios-card px-4 py-3 rounded-2xl border border-ios flex items-center gap-3 shadow-sm self-start">
-           <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-           <span className="text-[10px] font-black uppercase text-ios-primary">Live: 4 активных сессии</span>
+          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+          <span className="text-[10px] font-black uppercase text-ios-primary">Live: 4 активных сессии</span>
         </div>
       </div>
 
@@ -76,27 +76,27 @@ const Dashboard: React.FC<DashboardProps> = ({ products, customers, branches }) 
 
           {/* MAIN CHART */}
           <div className="col-span-full bg-ios-card p-6 md:p-8 rounded-[2.5rem] md:rounded-[3rem] border border-ios shadow-ios">
-             <div className="flex justify-between items-center mb-6 md:mb-10">
-                <h4 className="text-[10px] font-black text-ios-primary uppercase tracking-widest">Продажи vs Закупы</h4>
-                <div className="flex gap-2">
-                   <div className="w-3 h-3 rounded-full bg-ios-accent"></div>
-                   <div className="w-3 h-3 rounded-full bg-ios-accent opacity-30"></div>
-                </div>
-             </div>
-             <div className="h-48 md:h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                   <AreaChart data={chartData}>
-                      <defs>
-                        <linearGradient id="vGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="var(--ios-accent)" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="var(--ios-accent)" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <Tooltip contentStyle={{ borderRadius: '20px', border: 'none', background: 'var(--ios-card)', fontWeight: 800, fontSize: '10px' }} />
-                      <Area type="monotone" dataKey="v" stroke="var(--ios-accent)" strokeWidth={4} fill="url(#vGrad)" />
-                   </AreaChart>
-                </ResponsiveContainer>
-             </div>
+            <div className="flex justify-between items-center mb-6 md:mb-10">
+              <h4 className="text-[10px] font-black text-ios-primary uppercase tracking-widest">Продажи vs Закупы</h4>
+              <div className="flex gap-2">
+                <div className="w-3 h-3 rounded-full bg-ios-accent"></div>
+                <div className="w-3 h-3 rounded-full bg-ios-accent opacity-30"></div>
+              </div>
+            </div>
+            <div className="h-48 md:h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="vGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--ios-accent)" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="var(--ios-accent)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <Tooltip contentStyle={{ borderRadius: '20px', border: 'none', background: 'var(--ios-card)', fontWeight: 800, fontSize: '10px' }} />
+                  <Area type="monotone" dataKey="v" stroke="var(--ios-accent)" strokeWidth={4} fill="url(#vGrad)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 

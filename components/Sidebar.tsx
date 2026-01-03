@@ -1,17 +1,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Company } from '../types';
+import { View } from '../types';
+import { useApp } from '../contexts/AppContext';
 
-interface SidebarProps {
-  currentView: View;
-  setView: (view: View) => void;
-  onLogout: () => void;
-  activeCompany: Company;
-  companies: Company[];
-  setCompany: (company: Company) => void;
-}
-
-const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, onLogout, activeCompany, companies, setCompany }) => {
+const Sidebar: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
+  const { currentView, setView, activeCompany, companies, setActiveCompany } = useApp();
   const [showCompanyMenu, setShowCompanyMenu] = useState(false);
   const companyRef = useRef<HTMLDivElement>(null);
 
@@ -40,7 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, onLogout, activ
     <div className="w-64 bg-ios-card border-r border-ios h-screen flex flex-col relative z-sidebar overflow-hidden">
       {/* Brand Section */}
       <div className="p-6 relative" ref={companyRef}>
-        <button 
+        <button
           onClick={() => setShowCompanyMenu(!showCompanyMenu)}
           className="flex items-center gap-3 w-full group"
         >
@@ -61,10 +54,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, onLogout, activ
             {companies.map(company => (
               <button
                 key={company.id}
-                onClick={() => { setCompany(company); setShowCompanyMenu(false); }}
-                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  activeCompany.id === company.id ? 'bg-ios-accent text-white' : 'text-ios-secondary hover:bg-ios-sub'
-                }`}
+                onClick={() => { setActiveCompany(company); setShowCompanyMenu(false); }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${activeCompany.id === company.id ? 'bg-ios-accent text-white' : 'text-ios-secondary hover:bg-ios-sub'
+                  }`}
               >
                 {company.name}
               </button>
@@ -72,27 +64,26 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, onLogout, activ
           </div>
         )}
       </div>
-      
+
       {/* Navigation */}
       <nav className="flex-1 px-3 space-y-1 overflow-y-auto no-scrollbar pt-2">
         {menuItems.map((item) => (
           <button
             key={item.id}
             onClick={() => setView(item.id)}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all spring-press ${
-              currentView === item.id 
-                ? 'bg-ios-accent text-white font-black shadow-md' 
-                : 'text-ios-secondary hover:bg-ios-sub font-bold'
-            }`}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all spring-press ${currentView === item.id
+              ? 'bg-ios-accent text-white font-black shadow-md'
+              : 'text-ios-secondary hover:bg-ios-sub font-bold'
+              }`}
           >
             <div className="flex items-center gap-3">
-               <span className="text-lg">{item.icon}</span>
-               <span className="text-xs tracking-tight">{item.label}</span>
+              <span className="text-lg">{item.icon}</span>
+              <span className="text-xs tracking-tight">{item.label}</span>
             </div>
             {item.badge && (
-               <span className={`w-5 h-5 flex items-center justify-center rounded-full text-[9px] font-black ${currentView === item.id ? 'bg-white text-ios-accent' : 'bg-red-500 text-white'}`}>
-                  {item.badge}
-               </span>
+              <span className={`w-5 h-5 flex items-center justify-center rounded-full text-[9px] font-black ${currentView === item.id ? 'bg-white text-ios-accent' : 'bg-red-500 text-white'}`}>
+                {item.badge}
+              </span>
             )}
           </button>
         ))}
@@ -102,30 +93,30 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, onLogout, activ
       <div className="p-4 space-y-3">
         {/* Network Pulse Widget */}
         <div className="bg-ios-sub rounded-2xl p-4 border border-ios">
-           <div className="flex justify-between items-center mb-3">
-             <p className="text-[8px] font-black text-ios-secondary uppercase tracking-[0.2em]">Пульс сети</p>
-             <div className="flex gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm"></span>
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm"></span>
-             </div>
-           </div>
-           <div className="flex flex-wrap gap-2">
-             <div className="px-2 py-1 bg-ios-card rounded-lg text-[7px] font-black uppercase text-ios-accent border border-ios">Insta: ON</div>
-             <div className="px-2 py-1 bg-ios-card rounded-lg text-[7px] font-black uppercase text-green-500 border border-ios">WA: ON</div>
-           </div>
+          <div className="flex justify-between items-center mb-3">
+            <p className="text-[8px] font-black text-ios-secondary uppercase tracking-[0.2em]">Пульс сети</p>
+            <div className="flex gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm"></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm"></span>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <div className="px-2 py-1 bg-ios-card rounded-lg text-[7px] font-black uppercase text-ios-accent border border-ios">Insta: ON</div>
+            <div className="px-2 py-1 bg-ios-card rounded-lg text-[7px] font-black uppercase text-green-500 border border-ios">WA: ON</div>
+          </div>
         </div>
 
         <div className="bg-ios-sub rounded-2xl p-4 border border-ios">
-           <div className="flex justify-between items-center mb-2">
-             <p className="text-[9px] font-black text-ios-secondary uppercase tracking-widest">Склад</p>
-             <p className="text-[9px] font-black text-ios-primary">84%</p>
-           </div>
-           <div className="w-full h-1 bg-ios-border rounded-full overflow-hidden">
-             <div className="h-full bg-ios-accent" style={{width: '84%'}}></div>
-           </div>
+          <div className="flex justify-between items-center mb-2">
+            <p className="text-[9px] font-black text-ios-secondary uppercase tracking-widest">Склад</p>
+            <p className="text-[9px] font-black text-ios-primary">84%</p>
+          </div>
+          <div className="w-full h-1 bg-ios-border rounded-full overflow-hidden">
+            <div className="h-full bg-ios-accent" style={{ width: '84%' }}></div>
+          </div>
         </div>
 
-        <button 
+        <button
           onClick={onLogout}
           className="w-full flex items-center gap-3 px-4 py-3 bg-red-500/5 hover:bg-red-500/10 text-red-500 rounded-2xl transition-all text-[10px] font-black uppercase tracking-widest spring-press"
         >

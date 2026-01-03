@@ -1,23 +1,21 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Product, Customer } from '../types';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { getBusinessInsights } from '../services/geminiService';
+import { useInventory } from '../contexts/InventoryContext';
+import { useCRM } from '../contexts/CRMContext';
 
-interface AnalyticsViewProps {
-  products: Product[];
-  customers: Customer[];
-}
-
-const AnalyticsView: React.FC<AnalyticsViewProps> = ({ products, customers }) => {
+const AnalyticsView: React.FC = () => {
+  const { products } = useInventory();
+  const { customers } = useCRM();
   const [strategy, setStrategy] = useState<string>('Провожу глубокий анализ данных...');
 
   useEffect(() => {
     const fetchDeepInsights = async () => {
       // Small delay to allow initial render
       setTimeout(async () => {
-          const text = await getBusinessInsights(products, customers);
-          setStrategy(text || 'Нет данных для анализа');
+        const text = await getBusinessInsights(products, customers);
+        setStrategy(text || 'Нет данных для анализа');
       }, 500);
     };
     fetchDeepInsights();
@@ -36,11 +34,11 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ products, customers }) =>
       else acc.push({ name: p.category, value: 1 });
       return acc;
     }, []);
-    return data.length > 0 ? data : [{name: 'Нет данных', value: 1}];
+    return data.length > 0 ? data : [{ name: 'Нет данных', value: 1 }];
   }, [products]);
 
   const topCustomers = useMemo(() => {
-      return [...customers].sort((a,b) => b.totalSpent - a.totalSpent).slice(0, 4);
+    return [...customers].sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 4);
   }, [customers]);
 
   return (
@@ -61,13 +59,13 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ products, customers }) =>
               <AreaChart data={revenueData}>
                 <defs>
                   <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--ios-accent)" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="var(--ios-accent)" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="var(--ios-accent)" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="var(--ios-accent)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'var(--ios-text-secondary)', fontSize: 10}} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--ios-text-secondary)', fontSize: 10 }} />
                 <YAxis hide />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ borderRadius: '20px', border: 'none', backgroundColor: 'var(--ios-card)', color: 'var(--ios-text)', fontWeight: 800 }}
                   formatter={(value: number) => [`₸${value.toLocaleString()}`, 'Выручка']}
                 />
@@ -105,7 +103,7 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ products, customers }) =>
             {topCustomers.map((c, i) => (
               <div key={c.id} className="flex items-center justify-between p-4 bg-ios-sub rounded-2xl border border-ios">
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-black text-ios-accent opacity-50">#0{i+1}</span>
+                  <span className="text-[10px] font-black text-ios-accent opacity-50">#0{i + 1}</span>
                   <div>
                     <p className="text-xs font-black text-ios-primary">{c.name}</p>
                     <p className="text-[9px] text-ios-accent font-bold uppercase">{c.handle}</p>
