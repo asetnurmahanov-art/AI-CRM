@@ -6,7 +6,7 @@ import { useSocial } from '../contexts/SocialContext';
 import { useInventory } from '../contexts/InventoryContext';
 
 const SocialScheduler: React.FC = () => {
-  const { scheduledPosts, setScheduledPosts, productToPromote, setProductToPromote } = useSocial();
+  const { scheduledPosts, setScheduledPosts, productToPromote, setProductToPromote, accounts } = useSocial();
   const { products } = useInventory();
 
   // Alias preselectedProduct for backward compatibility with internal logic
@@ -18,6 +18,7 @@ const SocialScheduler: React.FC = () => {
   const [caption, setCaption] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [platform, setPlatform] = useState<'instagram' | 'facebook'>('instagram');
+  const [targetAccount, setTargetAccount] = useState<string>(''); // Account ID
   const [scheduledDate, setScheduledDate] = useState('');
   const [viewingPost, setViewingPost] = useState<SocialPost | null>(null);
 
@@ -57,6 +58,7 @@ const SocialScheduler: React.FC = () => {
       imageUrl: selectedProduct?.imageUrl,
       caption,
       platform,
+      targetAccountId: targetAccount,
       scheduledAt: scheduledDate || new Date().toISOString(),
       status: 'scheduled',
     };
@@ -208,8 +210,8 @@ const SocialScheduler: React.FC = () => {
             <div className="px-1 pb-2">
               <div className="flex justify-between items-start mb-2">
                 <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border ${post.status === 'draft' ? 'bg-amber-100 text-amber-600 border-amber-200' :
-                    post.status === 'scheduled' ? 'bg-blue-100 text-blue-600 border-blue-200' :
-                      'bg-gray-100 text-gray-600 border-gray-200'
+                  post.status === 'scheduled' ? 'bg-blue-100 text-blue-600 border-blue-200' :
+                    'bg-gray-100 text-gray-600 border-gray-200'
                   }`}>
                   {post.status === 'draft' ? 'Draft' : post.status === 'scheduled' ? 'Queued' : 'Done'}
                 </span>
@@ -281,16 +283,17 @@ const SocialScheduler: React.FC = () => {
                       <h3 className="text-xl font-black text-ios-primary leading-tight truncate">{selectedProduct.name}</h3>
                       <p className="text-[10px] font-bold text-ios-accent uppercase tracking-widest mt-1">{selectedProduct.brand}</p>
                     </div>
-                    <div className="flex bg-ios-sub p-1 rounded-xl shrink-0">
-                      {(['instagram', 'facebook'] as const).map(p => (
+                    <div className="flex bg-ios-sub p-1 rounded-xl shrink-0 overflow-x-auto gap-1">
+                      {accounts.filter(a => ['instagram', 'facebook'].includes(a.platform)).map(acc => (
                         <button
-                          key={p}
-                          onClick={() => setPlatform(p)}
-                          className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all spring-press ${platform === p ? 'bg-ios-card shadow-sm text-ios-primary' : 'text-ios-secondary'}`}
+                          key={acc.id}
+                          onClick={() => { setTargetAccount(acc.id); setPlatform(acc.platform as any); }}
+                          className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all whitespace-nowrap spring-press ${targetAccount === acc.id ? 'bg-ios-card shadow-sm text-ios-primary border border-ios' : 'text-ios-secondary'}`}
                         >
-                          {p === 'instagram' ? 'Insta' : 'FB'}
+                          {acc.name}
                         </button>
                       ))}
+                      {accounts.length === 0 && <span className="text-[9px] px-3 py-1.5 text-ios-secondary">Нет аккаунтов</span>}
                     </div>
                   </div>
 

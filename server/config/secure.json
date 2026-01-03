@@ -1,0 +1,13 @@
+{
+  "meta": {
+    "hash": "$2b$10$X342QYLxhofW2Cr27KZX6eicVouDzKnzPKQBLFzushLFNskw8vutq",
+    "version": 1,
+    "createdAt": "2026-01-03T14:38:37.088Z"
+  },
+  "data": {
+    "iv": "4eb4f409c8fcefe1767819557423a249",
+    "content": "e32181b3ef8a8cb617abe1dbcc036ec9fc817322e475e422f29c8af7fb9e97e3c51c6faab5a28b8b3f2454ec6ae30032b54bfa2a62bddd645c25e16e87c10fba6da6ca1605de87f772f5",
+    "authTag": "75edc1e52969e15266b2bd349882a29e",
+    "salt": "12debde64950d665299855a5c052dbcc"
+  }
+}

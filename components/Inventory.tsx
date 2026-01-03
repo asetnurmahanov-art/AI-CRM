@@ -29,9 +29,9 @@ const ProductCard = React.memo(({ product, onClick }: { product: Product, onClic
 
 const Inventory: React.FC = () => {
 
-  const { products, setProducts } = useInventory();
+  const { products, addProduct, updateProduct, deleteProduct } = useInventory();
   const { setProductToPromote } = useSocial(); // We only need this for promotion
-  const { setView } = useApp(); // To navigate to Scheduler
+  const { setView, aiProvider } = useApp(); // To navigate to Scheduler
 
   const onPromote = (product: Product) => {
     setProductToPromote(product);
@@ -69,30 +69,38 @@ const Inventory: React.FC = () => {
     const reader = new FileReader();
     reader.onload = async () => {
       const base64 = (reader.result as string).split(',')[1];
-      const result = await scanProductTag(base64);
-      if (result) {
-        const newProduct: Product = {
-          id: Date.now().toString(),
-          name: result.name || 'Новый товар',
-          brand: result.brand || 'N/A',
-          size: result.size || 'N/A',
-          price: result.price || 0,
-          costPrice: Math.floor(result.price * 0.6),
-          category: result.category || 'Общее',
-          barcode: result.barcode !== 'null' ? result.barcode : undefined,
-          status: 'available',
-          createdAt: new Date().toISOString(),
-          imageUrl: reader.result as string
-        };
-        setProducts(prev => [newProduct, ...prev]);
+      try {
+        const result = await scanProductTag(base64, aiProvider);
+        if (result) {
+          const newProduct: Product = {
+            id: Date.now().toString(),
+            name: result.name || 'Новый товар',
+            brand: result.brand || 'N/A',
+            size: result.size || 'N/A',
+            price: result.price || 0,
+            costPrice: Math.floor(result.price * 0.6),
+            category: result.category || 'Общее',
+            barcode: result.barcode !== 'null' ? result.barcode : undefined,
+            status: 'available',
+            createdAt: new Date().toISOString(),
+            imageUrl: reader.result as string
+          };
+          await addProduct(newProduct);
+        } else {
+          alert('Не удалось распознать фото. Проверьте API ключ или попробуйте другое фото.');
+        }
+      } catch (error) {
+        console.error("Scan failed", error);
+        alert('Ошибка при сканировании.');
+      } finally {
         setIsScanning(false);
       }
     };
     reader.readAsDataURL(file);
     if (e.target) e.target.value = '';
-  }, [setProducts]);
+  }, [addProduct]);
 
-  const handleManualSubmit = useCallback(() => {
+  const handleManualSubmit = useCallback(async () => {
     if (!manualProduct.name || !manualProduct.price) return;
     const newProduct: Product = {
       id: Date.now().toString(),
@@ -106,34 +114,35 @@ const Inventory: React.FC = () => {
       createdAt: new Date().toISOString(),
       imageUrl: ''
     };
-    setProducts(prev => [newProduct, ...prev]);
+    await addProduct(newProduct);
     setShowManualAdd(false);
     setManualProduct({ name: '', brand: '', price: 0, size: '', category: 'General' });
-  }, [manualProduct, setProducts]);
+  }, [manualProduct, addProduct]);
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (!selectedProduct || !editForm.id) return;
     const updatedProduct = { ...selectedProduct, ...editForm } as Product;
-    setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+    await updateProduct(updatedProduct);
     setSelectedProduct(updatedProduct);
     setIsEditing(false);
   };
 
-  const handleDeleteProduct = () => {
+  const handleDeleteProduct = async () => {
     if (!selectedProduct) return;
     if (confirm('Вы уверены, что хотите удалить этот товар?')) {
-      setProducts(prev => prev.filter(p => p.id !== selectedProduct.id));
+      await deleteProduct(selectedProduct.id);
       setSelectedProduct(null);
     }
   };
 
-  const cycleStatus = useCallback((product: Product) => {
+  const cycleStatus = useCallback(async (product: Product) => {
     const nextStatus = product.status === 'available' ? 'reserved' : product.status === 'reserved' ? 'sold' : 'available';
-    setProducts(prev => prev.map(p => p.id === product.id ? { ...p, status: nextStatus } : p));
+    const updated = { ...product, status: nextStatus };
+    await updateProduct(updated);
     if (selectedProduct && selectedProduct.id === product.id) {
-      setSelectedProduct(prev => prev ? { ...prev, status: nextStatus } : null);
+      setSelectedProduct(updated);
     }
-  }, [selectedProduct, setProducts]);
+  }, [selectedProduct, updateProduct]);
 
   const filteredProducts = useMemo(() => {
     return products.filter(p =>

@@ -4,7 +4,7 @@ import { CustomerStatus } from '../types';
 import { useCRM } from '../contexts/CRMContext';
 
 const CRMManager: React.FC = () => {
-  const { customers, setCustomers } = useCRM();
+  const { customers, addCustomer, updateCustomer } = useCRM();
   const [activeTab, setActiveTab] = useState<'kanban' | 'automation'>('kanban');
   const [showAddLead, setShowAddLead] = useState(false);
   const [draggedCustomerId, setDraggedCustomerId] = useState<string | null>(null);
@@ -46,11 +46,14 @@ const CRMManager: React.FC = () => {
     setDragOverStatus(status);
   };
 
-  const handleDrop = (e: React.DragEvent, targetStatus: CustomerStatus) => {
+  const handleDrop = async (e: React.DragEvent, targetStatus: CustomerStatus) => {
     e.preventDefault();
     const id = e.dataTransfer.getData('customerId') || draggedCustomerId;
     if (id) {
-      setCustomers(prev => prev.map(c => c.id === id ? { ...c, status: targetStatus } : c));
+      const customer = customers.find(c => c.id === id);
+      if (customer) {
+        await updateCustomer({ ...customer, status: targetStatus });
+      }
     }
     setDraggedCustomerId(null);
     setDragOverStatus(null);
@@ -60,7 +63,7 @@ const CRMManager: React.FC = () => {
     setDragOverStatus(null);
   };
 
-  const handleAddLead = () => {
+  const handleAddLead = async () => {
     if (!newLead.name) return;
     const customer: Customer = {
       id: Date.now().toString(),
@@ -71,19 +74,27 @@ const CRMManager: React.FC = () => {
       totalSpent: 0,
       status: 'new'
     };
-    setCustomers(prev => [customer, ...prev]);
+    await addCustomer(customer);
     setShowAddLead(false);
     setNewLead({ name: '', handle: '', platform: 'instagram' });
   };
 
-  const handleUpdateNotes = (id: string, notes: string) => {
-    setCustomers(prev => prev.map(c => c.id === id ? { ...c, notes } : c));
-    if (selectedCustomer) setSelectedCustomer({ ...selectedCustomer, notes });
+  const handleUpdateNotes = async (id: string, notes: string) => {
+    const customer = customers.find(c => c.id === id);
+    if (customer) {
+      // Optimistic
+      if (selectedCustomer) setSelectedCustomer({ ...selectedCustomer, notes });
+      await updateCustomer({ ...customer, notes });
+    }
   };
 
-  const handleStatusChange = (id: string, newStatus: CustomerStatus) => {
-    setCustomers(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c));
-    if (selectedCustomer) setSelectedCustomer(prev => prev ? { ...prev, status: newStatus } : null);
+  const handleStatusChange = async (id: string, newStatus: CustomerStatus) => {
+    const customer = customers.find(c => c.id === id);
+    if (customer) {
+      // Optimistic
+      if (selectedCustomer) setSelectedCustomer({ ...selectedCustomer, status: newStatus });
+      await updateCustomer({ ...customer, status: newStatus });
+    }
   };
 
   return (
@@ -212,8 +223,8 @@ const CRMManager: React.FC = () => {
                   key={stage.status}
                   onClick={() => setMobileActiveStage(stage.status)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all whitespace-nowrap ${isActive
-                      ? `bg-ios-primary text-ios-bg border-transparent shadow-lg scale-105`
-                      : `bg-ios-card text-ios-secondary border-ios`
+                    ? `bg-ios-primary text-ios-bg border-transparent shadow-lg scale-105`
+                    : `bg-ios-card text-ios-secondary border-ios`
                     }`}
                 >
                   <div className={`w-2 h-2 rounded-full ${stage.color}`}></div>

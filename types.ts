@@ -7,7 +7,8 @@ export enum View {
   ANALYTICS = 'ANALYTICS',
   SCHEDULER = 'SCHEDULER',
   SETTINGS = 'SETTINGS',
-  TOOLS = 'TOOLS'
+  TOOLS = 'TOOLS',
+  DATABASE = 'DATABASE'
 }
 
 export interface Branch {
@@ -76,10 +77,12 @@ export interface SocialPost {
   platform: 'instagram' | 'facebook';
   scheduledAt: string;
   status: 'draft' | 'scheduled' | 'posted' | 'archived';
+  targetAccountId?: string; // Which account to post to
 }
 
 export interface SocialMessage {
   id: string;
+  accountId?: string; // Which of our accounts received this
   customerId?: string;
   customerName: string;
   customerHandle: string;
@@ -93,9 +96,19 @@ export interface SocialMessage {
 
 export interface SocialAccount {
   id: string;
+  name: string; // Account name (e.g. "My Business Page")
   platform: 'instagram' | 'facebook' | 'whatsapp';
   isConnected: boolean;
   username?: string;
+  avatarUrl?: string; // Profile picture
+  apiKey?: string; // Real API Key / Access Token
+  apiSecret?: string; // Real API Secret (optional depending on platform)
+  accessToken?: string; // For real API (mocked)
+  stats?: {
+    followers: number;
+    posts: number;
+    engagement: number;
+  };
 }
 
 export interface FunnelStep {

@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       proxy: {
         '/api': {
-          target: 'http://localhost:3001',
+          target: 'http://localhost:3005',
           changeOrigin: true,
           // rewrite: (path) => path.replace(/^\/api/, '') // Express app already has paths like /scan-tag mounted on root? 
           // WAIT. In server/index.js, routes are /api/scan-tag.

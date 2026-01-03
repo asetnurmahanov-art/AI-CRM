@@ -2,9 +2,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View } from '../types';
 import { useApp } from '../contexts/AppContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const Sidebar: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const { currentView, setView, activeCompany, companies, setActiveCompany } = useApp();
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    onLogout();
+  };
+
   const [showCompanyMenu, setShowCompanyMenu] = useState(false);
   const companyRef = useRef<HTMLDivElement>(null);
 
@@ -117,17 +125,17 @@ const Sidebar: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         </div>
 
         <button
-          onClick={onLogout}
+          onClick={handleLogout}
           className="w-full flex items-center gap-3 px-4 py-3 bg-red-500/5 hover:bg-red-500/10 text-red-500 rounded-2xl transition-all text-[10px] font-black uppercase tracking-widest spring-press"
         >
           🚪 Выйти
         </button>
 
         <div className="flex items-center gap-3 px-2">
-          <img src="https://picsum.photos/100/100?seed=admin" className="w-8 h-8 rounded-full border border-ios" />
+          <img src={user?.photoURL || "https://picsum.photos/100/100?seed=admin"} className="w-8 h-8 rounded-full border border-ios" />
           <div className="min-w-0">
-            <p className="text-[10px] font-black text-ios-primary truncate">Администратор</p>
-            <p className="text-[8px] font-bold text-ios-secondary uppercase">Марина С.</p>
+            <p className="text-[10px] font-black text-ios-primary truncate">{user?.displayName || 'Пользователь'}</p>
+            <p className="text-[8px] font-bold text-ios-secondary uppercase overflow-hidden text-ellipsis">{user?.email}</p>
           </div>
         </div>
       </div>

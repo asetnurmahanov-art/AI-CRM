@@ -6,41 +6,47 @@ const handleApiError = (error: any, fallback: string) => {
   return `⚠️ ${fallback}`;
 };
 
-export const scanProductTag = async (base64Image: string) => {
+// MOCK DATA GENERATORS
+const getMockProduct = () => ({
+  brand: 'MOCK BRAND',
+  size: 'M',
+  price: 15990,
+  category: 'Hoodie',
+  name: 'Mock Hoodie Black',
+  barcode: '123456789',
+  material: 'Cotton',
+  washingInstructions: '30C'
+});
+
+export const scanProductTag = async (base64Image: string, provider: 'api' | 'local' = 'api') => {
+  if (provider === 'local') {
+    console.log('Using Local Mock for scanProductTag');
+    await new Promise(r => setTimeout(r, 1500)); // Sim delay
+    return getMockProduct();
+  }
+
   try {
-    const response = await fetch(`${API_URL}/scan-tag`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: base64Image.split(',')[1] }) // Send base64 content only if needed, or full string depending on backend expectation. Backend expects data: image/jpeg;base64... or just base64? 
-      // Backend: { inlineData: { mimeType: 'image/jpeg', data: image } }
-      // The frontend usually has "data:image/jpeg;base64,..."
-      // Let's check how the frontend passes it.
-      // Usually `base64Image` string includes the prefix.
-      // The backend code: `data: image`
-      // `inlineData` expects raw base64 string usually? 
-      // Google GenAI SDK `inlineData.data` expects "The base64 encoded string..."
-      // So we should Strip the prefix if present.
-    });
-
-    // Safety check for base64 stripping in the call above:
-    // If base64Image starts with "data:", split it.
     const cleanImage = base64Image.includes('base64,') ? base64Image.split('base64,')[1] : base64Image;
-
-    const res = await fetch(`${API_URL}/scan-tag`, {
+    const response = await fetch(`${API_URL}/scan-tag`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ image: cleanImage })
     });
 
-    if (!res.ok) throw new Error(res.statusText);
-    return await res.json();
+    if (!response.ok) throw new Error(response.statusText);
+    return await response.json();
   } catch (e) {
     console.error("Scan Error", e);
     return null;
   }
 };
 
-export const getMarketTrends = async () => {
+export const getMarketTrends = async (provider: 'api' | 'local' = 'api') => {
+  if (provider === 'local') {
+    await new Promise(r => setTimeout(r, 1000));
+    return "📈 [LOCAL SIMULATION] Тренды 2025: Экологичность, пастельные тона и минимализм. Популярны бренды Zara Kids и H&M.";
+  }
+
   try {
     const response = await fetch(`${API_URL}/market-trends`);
     if (!response.ok) throw new Error(response.statusText);
@@ -51,7 +57,13 @@ export const getMarketTrends = async () => {
   }
 };
 
-export const professionalizeImage = async (base64Image: string, productName: string, style: string = 'studio') => {
+export const professionalizeImage = async (base64Image: string, productName: string, style: string = 'studio', provider: 'api' | 'local' = 'api') => {
+  if (provider === 'local') {
+    await new Promise(r => setTimeout(r, 2000));
+    // Return original image as mock "processed"
+    return base64Image;
+  }
+
   try {
     const cleanImage = base64Image.includes('base64,') ? base64Image.split('base64,')[1] : base64Image;
     const response = await fetch(`${API_URL}/professionalize-image`, {
@@ -68,7 +80,12 @@ export const professionalizeImage = async (base64Image: string, productName: str
   }
 };
 
-export const generatePostCaption = async (productName: string, brand: string, price: number) => {
+export const generatePostCaption = async (productName: string, brand: string, price: number, provider: 'api' | 'local' = 'api') => {
+  if (provider === 'local') {
+    await new Promise(r => setTimeout(r, 1000));
+    return `🔥 [LOCAL] Супер новинка! ${productName} от ${brand} всего за ${price}₸. Успейте купить! #fashion #sale`;
+  }
+
   try {
     const response = await fetch(`${API_URL}/generate-caption`, {
       method: 'POST',
@@ -83,7 +100,12 @@ export const generatePostCaption = async (productName: string, brand: string, pr
   }
 };
 
-export const generateSocialReply = async (message: string, customerName: string) => {
+export const generateSocialReply = async (message: string, customerName: string, provider: 'api' | 'local' = 'api') => {
+  if (provider === 'local') {
+    await new Promise(r => setTimeout(r, 1000));
+    return `Здравствуйте, ${customerName}! [LOCAL] Спасибо за ваше сообщение: "${message}". Мы скоро ответим!`;
+  }
+
   try {
     const response = await fetch(`${API_URL}/social-reply`, {
       method: 'POST',
@@ -98,7 +120,12 @@ export const generateSocialReply = async (message: string, customerName: string)
   }
 };
 
-export const getBusinessInsights = async (inventory: any[], customers: any[]) => {
+export const getBusinessInsights = async (inventory: any[], customers: any[], provider: 'api' | 'local' = 'api') => {
+  if (provider === 'local') {
+    await new Promise(r => setTimeout(r, 1000));
+    return "📊 [LOCAL] Совет 1: Увеличьте запасы популярных товаров.\nСовет 2: Запустите рассылку.\nСовет 3: Проверьте цены конкурентов.";
+  }
+
   try {
     const response = await fetch(`${API_URL}/business-insights`, {
       method: 'POST',

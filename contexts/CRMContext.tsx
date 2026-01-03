@@ -8,22 +8,60 @@ const INITIAL_CUSTOMERS: Customer[] = [
   { id: '3', name: 'Ольга Смирнова', handle: 'Olga Smirnova', platform: 'facebook', lastInteraction: '2024-10-05', totalSpent: 450000, status: 'won' },
 ];
 
+import { dbService } from '../services/db';
+
 interface CRMContextType {
   customers: Customer[];
   setCustomers: React.Dispatch<React.SetStateAction<Customer[]>>;
+  addCustomer: (customer: Customer) => Promise<void>;
+  updateCustomer: (customer: Customer) => Promise<void>;
 }
 
 const CRMContext = createContext<CRMContextType | undefined>(undefined);
 
 export const CRMProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [customers, setCustomers] = useState<Customer[]>(() => JSON.parse(localStorage.getItem('crm_customers') || JSON.stringify(INITIAL_CUSTOMERS)));
+  const [customers, setCustomers] = useState<Customer[]>([]);
 
   useEffect(() => {
-    localStorage.setItem('crm_customers', JSON.stringify(customers));
-  }, [customers]);
+    const load = async () => {
+      try {
+        const data = await dbService.getAll('customers');
+        if (data.length === 0) {
+          // Initial seed if empty
+          // Optionally seed from INITIAL_CUSTOMERS if DB is empty
+          // For now, leave empty
+        }
+        setCustomers(data as Customer[]);
+      } catch (e) {
+        console.error("Failed to load customers", e);
+      }
+    };
+    load();
+  }, []);
+
+  const addCustomer = async (customer: Customer) => {
+    setCustomers(prev => [customer, ...prev]);
+    try {
+      const { id, ...rest } = customer;
+      const newId = await dbService.add('customers', rest);
+      setCustomers(prev => prev.map(c => c.id === customer.id ? { ...c, id: newId } : c));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const updateCustomer = async (customer: Customer) => {
+    setCustomers(prev => prev.map(c => c.id === customer.id ? customer : c));
+    try {
+      const { id, ...data } = customer;
+      await dbService.update('customers', id, data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   return (
-    <CRMContext.Provider value={{ customers, setCustomers }}>
+    <CRMContext.Provider value={{ customers, setCustomers, addCustomer, updateCustomer }}>
       {children}
     </CRMContext.Provider>
   );

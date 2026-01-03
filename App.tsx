@@ -9,14 +9,27 @@ import CRMManager from './components/CRMManager';
 import AnalyticsView from './components/AnalyticsView';
 import Settings from './components/Settings';
 import ToolsView from './components/ToolsView';
+import DatabaseDashboard from './components/admin/DatabaseDashboard';
 import { View } from './types';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { InventoryProvider } from './contexts/InventoryContext';
 import { CRMProvider } from './contexts/CRMContext';
 import { SocialProvider } from './contexts/SocialContext';
 
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Login from './components/Login';
+
 const AppInner: React.FC = () => {
   const { currentView, setView, isMobile } = useApp();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center bg-gray-100">Загрузка...</div>;
+  }
+
+  if (!user) {
+    return <Login />;
+  }
 
   const navItems = [
     { id: View.DASHBOARD, label: 'Обзор', icon: '🏠' },
@@ -32,7 +45,7 @@ const AppInner: React.FC = () => {
     <div className="flex min-h-screen bg-ios-bg selection:bg-ios-accent selection:text-white transition-colors duration-500 overflow-hidden">
       {!isMobile && (
         <div className="fixed inset-y-0 left-0 w-64 z-40">
-          <Sidebar onLogout={() => console.log('Logout')} />
+          <Sidebar onLogout={() => console.log('Logout handled in Sidebar')} />
         </div>
       )}
 
@@ -47,6 +60,7 @@ const AppInner: React.FC = () => {
             {currentView === View.ANALYTICS && <AnalyticsView />}
             {currentView === View.SETTINGS && <Settings />}
             {currentView === View.TOOLS && <ToolsView />}
+            {currentView === View.DATABASE && <DatabaseDashboard />}
           </div>
         </main>
 
@@ -70,15 +84,17 @@ const AppInner: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <AppProvider>
-      <InventoryProvider>
-        <CRMProvider>
-          <SocialProvider>
-            <AppInner />
-          </SocialProvider>
-        </CRMProvider>
-      </InventoryProvider>
-    </AppProvider>
+    <AuthProvider>
+      <AppProvider>
+        <InventoryProvider>
+          <CRMProvider>
+            <SocialProvider>
+              <AppInner />
+            </SocialProvider>
+          </CRMProvider>
+        </InventoryProvider>
+      </AppProvider>
+    </AuthProvider>
   );
 };
 
