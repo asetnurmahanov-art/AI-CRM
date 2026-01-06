@@ -1,5 +1,6 @@
 
 const socialService = require('../services/social.service');
+const whatsappService = require('../services/whatsapp.service');
 
 class SocialController {
 
@@ -45,6 +46,30 @@ class SocialController {
             const result = await socialService.sendReply(messageId, text, apiKey);
             res.json({ success: true, result });
         } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async getWhatsAppQR(req, res) {
+        try {
+            await whatsappService.getSession(); // Ensure session is active
+            const qr = whatsappService.getQRCode();
+            const connected = await whatsappService.isConnected();
+            res.json({ success: true, qr, connected });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async connectOAuth(req, res) {
+        try {
+            const { platform, accessToken } = req.body;
+            console.log(`🔌 Connecting OAuth for ${platform}...`);
+            const accounts = await socialService.getAccounts(accessToken, platform);
+            console.log(`✅ Found ${accounts.length} accounts`);
+            res.json({ success: true, accounts, token: accessToken });
+        } catch (error) {
+            console.error('Connect OAuth Error:', error);
             res.status(500).json({ error: error.message });
         }
     }

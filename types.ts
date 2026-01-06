@@ -8,7 +8,30 @@ export enum View {
   SCHEDULER = 'SCHEDULER',
   SETTINGS = 'SETTINGS',
   TOOLS = 'TOOLS',
-  DATABASE = 'DATABASE'
+  DATABASE = 'DATABASE',
+  DOCS = 'DOCS'
+}
+
+export enum UserRole {
+  OWNER = 'OWNER',
+  ADMIN = 'ADMIN',
+  MANAGER = 'MANAGER',
+  EMPLOYEE = 'EMPLOYEE'
+}
+
+export type SubscriptionPlan = 'free' | 'pro' | 'premium';
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  displayName?: string;
+  photoURL?: string;
+  role: UserRole;
+  plan: SubscriptionPlan;
+  status: 'active' | 'disabled';
+  department?: string;
+  createdAt: string;
+  lastLogin: string;
 }
 
 export interface Branch {
@@ -87,7 +110,7 @@ export interface SocialMessage {
   customerName: string;
   customerHandle: string;
   customerAvatar?: string;
-  platform: 'instagram' | 'facebook' | 'whatsapp';
+  platform: 'instagram' | 'facebook' | 'whatsapp' | 'threads';
   text: string;
   timestamp: string;
   isRead: boolean;
@@ -97,7 +120,7 @@ export interface SocialMessage {
 export interface SocialAccount {
   id: string;
   name: string; // Account name (e.g. "My Business Page")
-  platform: 'instagram' | 'facebook' | 'whatsapp';
+  platform: 'instagram' | 'facebook' | 'whatsapp' | 'threads';
   isConnected: boolean;
   username?: string;
   avatarUrl?: string; // Profile picture
@@ -116,4 +139,23 @@ export interface FunnelStep {
   label: string;
   description: string;
   action: string;
+}
+
+export interface DocSection {
+  id: string;
+  title: string;
+  content: string; // Markdown supported
+}
+
+export interface Specification {
+  id: string;
+  title: string;
+  category: string; // e.g., 'Feature', 'API', 'UI', 'Schema'
+  status: 'draft' | 'review' | 'approved';
+  tags?: string[];
+  sections: DocSection[];
+  createdAt: string;
+  updatedAt: string;
+  authorId?: string;
+  authorName?: string;
 }

@@ -2,7 +2,9 @@
 import React, { useState } from 'react';
 import {
     signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
     GoogleAuthProvider,
+    OAuthProvider,
     signInWithPopup,
     sendPasswordResetEmail
 } from 'firebase/auth';
@@ -15,6 +17,8 @@ const Login: React.FC = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
+    const [isRegistering, setIsRegistering] = useState(false);
+    const [confirmPassword, setConfirmPassword] = useState('');
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -40,6 +44,45 @@ const Login: React.FC = () => {
         } catch (err: any) {
             console.error(err);
             setError('Ошибка Google входа: ' + (translateFirebaseError(err.code) || err.message));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAppleLogin = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            const provider = new OAuthProvider('apple.com');
+            await signInWithPopup(auth, provider);
+        } catch (err: any) {
+            console.error(err);
+            setError('Ошибка Apple входа: ' + (translateFirebaseError(err.code) || err.message));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handlePhoneLogin = () => {
+        // Placeholder for Phone Auth
+        setError('Вход по номеру телефона будет доступен в ближайшее время');
+    };
+
+    const handleRegister = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (password !== confirmPassword) {
+            setError('Пароли не совпадают');
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+
+        try {
+            await createUserWithEmailAndPassword(auth, email, password);
+        } catch (err: any) {
+            console.error(err);
+            setError('Ошибка регистрации: ' + (translateFirebaseError(err.code) || err.message));
         } finally {
             setLoading(false);
         }
@@ -77,6 +120,7 @@ const Login: React.FC = () => {
             case 'auth/user-not-found': return 'Пользователь не найден';
             case 'auth/wrong-password': return 'Неверный пароль';
             case 'auth/email-already-in-use': return 'Email уже используется';
+            case 'auth/weak-password': return 'Пароль слишком простой (минимум 6 символов)';
             case 'auth/popup-closed-by-user': return 'Вход отменен пользователем';
             case 'auth/configuration-not-found': return 'Вход через Google не настроен в консоли Firebase';
             case 'auth/operation-not-allowed': return 'Этот метод входа отключен в проекте';
@@ -139,6 +183,64 @@ const Login: React.FC = () => {
                             ← Вернуться ко входу
                         </button>
                     </form>
+                ) : isRegistering ? (
+                    // Register Form
+                    <div className="space-y-6 animate-fade-in-up">
+                        <form onSubmit={handleRegister} className="space-y-5">
+                            <h2 className="text-xl font-bold text-gray-800">Создание аккаунта</h2>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Email</label>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all placeholder:text-gray-300"
+                                    placeholder="your@email.com"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Пароль</label>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all placeholder:text-gray-300"
+                                    placeholder="••••••••"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">Подтвердите пароль</label>
+                                <input
+                                    type="password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all placeholder:text-gray-300"
+                                    placeholder="••••••••"
+                                    required
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className={`w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-600/30 hover:bg-blue-700 hover:shadow-blue-700/40 active:scale-[0.98] transition-all duration-200 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                            >
+                                {loading ? 'Регистрация...' : 'Создать аккаунт'}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => { setIsRegistering(false); setError(''); }}
+                                className="w-full py-2 text-sm text-gray-500 hover:text-gray-800 font-medium transition-colors"
+                            >
+                                Уже есть аккаунт? Войти
+                            </button>
+                        </form>
+                    </div>
                 ) : (
                     // Login Form
                     <div className="space-y-6 animate-fade-in-up">
@@ -185,6 +287,16 @@ const Login: React.FC = () => {
                             </button>
                         </form>
 
+                        <div className="mb-4">
+                            <button
+                                type="button"
+                                onClick={() => { setIsRegistering(true); setError(''); }}
+                                className="w-full py-2 text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                            >
+                                Нет аккаунта? Создать
+                            </button>
+                        </div>
+
                         <div className="relative">
                             <div className="absolute inset-0 flex items-center">
                                 <div className="w-full border-t border-gray-200"></div>
@@ -219,6 +331,30 @@ const Login: React.FC = () => {
                                 />
                             </svg>
                             Google
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={handleAppleLogin}
+                            disabled={loading}
+                            className={`w-full py-3.5 bg-black text-white rounded-xl font-bold shadow-sm hover:bg-gray-900 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-3 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        >
+                            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M17.05 20.28c-.98.95-2.05 2.34-3.69 2.34-1.63 0-2.15-1.02-4.04-1.02-1.89 0-2.43 1.02-4 1.02-1.74 0-3-1.63-4.09-3.95-2.22-4.83-.58-12.04 4.39-12.04 1.48 0 2.64.92 3.48.92.83 0 2.27-1.15 3.8-1.15 1.5 0 2.87.68 3.65 1.63-3.23 1.84-2.69 6.2 1.09 7.74-.69 2.27-1.76 4.67-3.59 6.51zm-3.6-13.43c.77-1.07 1.3-2.58 1.15-4.06-1.4.08-3.07.97-4.06 2.15-.84.97-1.57 2.53-1.37 3.97 1.57.13 3.32-.9 4.28-2.06z" />
+                            </svg>
+                            Apple
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={handlePhoneLogin}
+                            disabled={loading}
+                            className={`w-full py-3.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold shadow-sm hover:bg-gray-50 hover:border-gray-300 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-3 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        >
+                            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                            </svg>
+                            Телефон
                         </button>
                     </div>
                 )}

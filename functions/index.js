@@ -1,8 +1,8 @@
-const functions = require('firebase-functions');
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const { GoogleGenAI, Type } = require("@google/genai");
+const { onRequest } = require("firebase-functions/v2/https");
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
 
 dotenv.config();
 
@@ -17,7 +17,7 @@ app.use(express.json({ limit: '50mb' }));
 // or secrets, but dotenv works if .env is deployed (though less secure for source control).
 // For now, we'll strip process.env usage or ensure .env is compatible.
 const apiKey = process.env.GEMINI_API_KEY;
-const ai = new GoogleGenAI({ apiKey });
+const ai = new GoogleGenerativeAI(apiKey);
 
 // Helpers
 const handleAiError = (error, fallback) => {
@@ -49,16 +49,16 @@ app.post('/scan-tag', async (req, res) => {
             config: {
                 responseMimeType: "application/json",
                 responseSchema: {
-                    type: Type.OBJECT,
+                    type: SchemaType.OBJECT,
                     properties: {
-                        brand: { type: Type.STRING },
-                        size: { type: Type.STRING },
-                        price: { type: Type.NUMBER },
-                        category: { type: Type.STRING },
-                        name: { type: Type.STRING },
-                        barcode: { type: Type.STRING },
-                        material: { type: Type.STRING },
-                        washingInstructions: { type: Type.STRING },
+                        brand: { type: SchemaType.STRING },
+                        size: { type: SchemaType.STRING },
+                        price: { type: SchemaType.NUMBER },
+                        category: { type: SchemaType.STRING },
+                        name: { type: SchemaType.STRING },
+                        barcode: { type: SchemaType.STRING },
+                        material: { type: SchemaType.STRING },
+                        washingInstructions: { type: SchemaType.STRING },
                     },
                     required: ["brand", "size", "price", "category", "name", "barcode", "material", "washingInstructions"],
                 }
@@ -175,5 +175,95 @@ app.post('/business-insights', async (req, res) => {
     }
 });
 
-// Export as Cloud Function
-exports.api = functions.https.onRequest(app);
+// --- SOCIAL INTEGRATION ROUTES ---
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const { Boom } = require('@hapi/boom');
+const qrcode = require('qrcode');
+const path = require('path');
+const fs = require('fs');
+
+let whatsappSessions = new Map();
+let whatsappQRs = new Map();
+
+async function getWhatsAppSession(sessionId = 'default') {
+    if (whatsappSessions.has(sessionId)) return whatsappSessions.get(sessionId);
+
+    // In Cloud Functions, only /tmp is writable
+    const authPath = path.join('/tmp', 'auth', sessionId);
+    if (!fs.existsSync(path.dirname(authPath))) {
+        fs.mkdirSync(path.dirname(authPath), { recursive: true });
+    }
+
+    const { state, saveCreds } = await useMultiFileAuthState(authPath);
+    const sock = makeWASocket({ auth: state, printQRInTerminal: false });
+
+    sock.ev.on('creds.update', saveCreds);
+    sock.ev.on('connection.update', async (update) => {
+        const { connection, lastDisconnect, qr } = update;
+        if (qr) {
+            whatsappQRs.set(sessionId, await qrcode.toDataURL(qr));
+        }
+        if (connection === 'close') {
+            const shouldReconnect = (lastDisconnect.error instanceof Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
+            if (shouldReconnect) getWhatsAppSession(sessionId);
+            else {
+                whatsappSessions.delete(sessionId);
+                whatsappQRs.delete(sessionId);
+            }
+        } else if (connection === 'open') {
+            whatsappQRs.delete(sessionId);
+        }
+    });
+
+    whatsappSessions.set(sessionId, sock);
+    return sock;
+}
+
+app.get('/social/whatsapp-qr', async (req, res) => {
+    try {
+        await getWhatsAppSession();
+        const qr = whatsappQRs.get('default');
+        const connected = !!whatsappSessions.get('default')?.user;
+        res.json({ success: true, qr, connected });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/social/connect-oauth', async (req, res) => {
+    try {
+        const { platform, accessToken } = req.body;
+        const fbBaseUrl = 'https://graph.facebook.com/v19.0';
+
+        const response = await fetch(`${fbBaseUrl}/me/accounts?fields=name,id,picture,access_token,instagram_business_account{id,username,profile_picture_url,name,fan_count}&access_token=${accessToken}`);
+        const data = await response.json();
+
+        if (data.error) throw new Error(data.error.message);
+        const pages = data.data || [];
+
+        let accounts = pages;
+        if (platform === 'instagram') {
+            accounts = pages
+                .filter(p => p.instagram_business_account)
+                .map(p => ({
+                    id: p.instagram_business_account.id,
+                    name: p.instagram_business_account.name || p.name,
+                    username: p.instagram_business_account.username,
+                    picture: p.instagram_business_account.profile_picture_url,
+                    fan_count: p.instagram_business_account.fan_count,
+                    page_id: p.id,
+                    page_token: p.access_token
+                }));
+        }
+        res.json({ success: true, accounts, token: accessToken });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Export as Cloud Function v2
+exports.api = onRequest({
+    cors: true,
+    maxInstances: 10,
+    timeoutSeconds: 120
+}, app);

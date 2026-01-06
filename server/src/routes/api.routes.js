@@ -17,4 +17,8 @@ apiRoutes.post('/business-insights', aiController.businessInsights);
 const socialRoutes = require('./social.routes');
 apiRoutes.use('/social', socialRoutes);
 
+// Webhook Routes
+const webhookRoutes = require('./webhook.routes');
+apiRoutes.use('/webhook', webhookRoutes);
+
 module.exports = apiRoutes;

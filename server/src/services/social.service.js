@@ -8,18 +8,37 @@ class SocialService {
     }
 
     /**
-     * Fetch connected accounts (Pages) from Facebook Graph API
+     * Fetch connected accounts (Pages/Instagram) from Facebook Graph API
      */
-    async getAccounts(apiKey) {
+    async getAccounts(apiKey, platform = 'facebook') {
         if (!apiKey) throw new Error('API Key is required');
 
         try {
-            const response = await fetch(`${this.baseUrl}/me/accounts?access_token=${apiKey}`);
+            // Fetch pages with their linked Instagram accounts
+            const response = await fetch(`${this.baseUrl}/me/accounts?fields=name,id,picture,access_token,instagram_business_account{id,username,profile_picture_url,name,fan_count}&access_token=${apiKey}`);
             const data = await response.json();
 
             if (data.error) throw new Error(data.error.message);
 
-            return data.data || [];
+            const pages = data.data || [];
+
+            if (platform === 'instagram') {
+                // Extract Instagram accounts from pages
+                const igAccounts = pages
+                    .filter(p => p.instagram_business_account)
+                    .map(p => ({
+                        id: p.instagram_business_account.id,
+                        name: p.instagram_business_account.name || p.name,
+                        username: p.instagram_business_account.username,
+                        picture: p.instagram_business_account.profile_picture_url,
+                        fan_count: p.instagram_business_account.fan_count,
+                        page_id: p.id,
+                        page_token: p.access_token
+                    }));
+                return igAccounts;
+            }
+
+            return pages;
         } catch (error) {
             console.error('SocialService.getAccounts error:', error);
             throw error;

@@ -1,4 +1,3 @@
-
 const API_URL = '/api';
 
 const handleApiError = (error: any, fallback: string) => {
@@ -6,25 +5,7 @@ const handleApiError = (error: any, fallback: string) => {
   return `⚠️ ${fallback}`;
 };
 
-// MOCK DATA GENERATORS
-const getMockProduct = () => ({
-  brand: 'MOCK BRAND',
-  size: 'M',
-  price: 15990,
-  category: 'Hoodie',
-  name: 'Mock Hoodie Black',
-  barcode: '123456789',
-  material: 'Cotton',
-  washingInstructions: '30C'
-});
-
-export const scanProductTag = async (base64Image: string, provider: 'api' | 'local' = 'api') => {
-  if (provider === 'local') {
-    console.log('Using Local Mock for scanProductTag');
-    await new Promise(r => setTimeout(r, 1500)); // Sim delay
-    return getMockProduct();
-  }
-
+export const scanProductTag = async (base64Image: string) => {
   try {
     const cleanImage = base64Image.includes('base64,') ? base64Image.split('base64,')[1] : base64Image;
     const response = await fetch(`${API_URL}/scan-tag`, {
@@ -41,12 +22,7 @@ export const scanProductTag = async (base64Image: string, provider: 'api' | 'loc
   }
 };
 
-export const getMarketTrends = async (provider: 'api' | 'local' = 'api') => {
-  if (provider === 'local') {
-    await new Promise(r => setTimeout(r, 1000));
-    return "📈 [LOCAL SIMULATION] Тренды 2025: Экологичность, пастельные тона и минимализм. Популярны бренды Zara Kids и H&M.";
-  }
-
+export const getMarketTrends = async () => {
   try {
     const response = await fetch(`${API_URL}/market-trends`);
     if (!response.ok) throw new Error(response.statusText);
@@ -57,13 +33,7 @@ export const getMarketTrends = async (provider: 'api' | 'local' = 'api') => {
   }
 };
 
-export const professionalizeImage = async (base64Image: string, productName: string, style: string = 'studio', provider: 'api' | 'local' = 'api') => {
-  if (provider === 'local') {
-    await new Promise(r => setTimeout(r, 2000));
-    // Return original image as mock "processed"
-    return base64Image;
-  }
-
+export const professionalizeImage = async (base64Image: string, productName: string, style: string = 'studio') => {
   try {
     const cleanImage = base64Image.includes('base64,') ? base64Image.split('base64,')[1] : base64Image;
     const response = await fetch(`${API_URL}/professionalize-image`, {
@@ -80,12 +50,7 @@ export const professionalizeImage = async (base64Image: string, productName: str
   }
 };
 
-export const generatePostCaption = async (productName: string, brand: string, price: number, provider: 'api' | 'local' = 'api') => {
-  if (provider === 'local') {
-    await new Promise(r => setTimeout(r, 1000));
-    return `🔥 [LOCAL] Супер новинка! ${productName} от ${brand} всего за ${price}₸. Успейте купить! #fashion #sale`;
-  }
-
+export const generatePostCaption = async (productName: string, brand: string, price: number) => {
   try {
     const response = await fetch(`${API_URL}/generate-caption`, {
       method: 'POST',
@@ -100,12 +65,7 @@ export const generatePostCaption = async (productName: string, brand: string, pr
   }
 };
 
-export const generateSocialReply = async (message: string, customerName: string, provider: 'api' | 'local' = 'api') => {
-  if (provider === 'local') {
-    await new Promise(r => setTimeout(r, 1000));
-    return `Здравствуйте, ${customerName}! [LOCAL] Спасибо за ваше сообщение: "${message}". Мы скоро ответим!`;
-  }
-
+export const generateSocialReply = async (message: string, customerName: string) => {
   try {
     const response = await fetch(`${API_URL}/social-reply`, {
       method: 'POST',
@@ -120,12 +80,7 @@ export const generateSocialReply = async (message: string, customerName: string,
   }
 };
 
-export const getBusinessInsights = async (inventory: any[], customers: any[], provider: 'api' | 'local' = 'api') => {
-  if (provider === 'local') {
-    await new Promise(r => setTimeout(r, 1000));
-    return "📊 [LOCAL] Совет 1: Увеличьте запасы популярных товаров.\nСовет 2: Запустите рассылку.\nСовет 3: Проверьте цены конкурентов.";
-  }
-
+export const getBusinessInsights = async (inventory: any[], customers: any[]) => {
   try {
     const response = await fetch(`${API_URL}/business-insights`, {
       method: 'POST',

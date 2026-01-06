@@ -17,11 +17,98 @@ const SettingsIntegrations: React.FC = () => {
 
     // Social State
     const [connectPlatform, setConnectPlatform] = useState<'instagram' | 'facebook' | 'whatsapp'>('instagram');
-    const [connectUsername, setConnectUsername] = useState('');
-    const [connectApiKey, setConnectApiKey] = useState('');
-    const [connectApiSecret, setConnectApiSecret] = useState('');
+    const [qrCode, setQrCode] = useState<string | null>(null);
+    const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
 
-    const API_URL = 'http://localhost:3005/api';
+    React.useEffect(() => {
+        if (showConnectModal && connectPlatform === 'whatsapp') {
+            startQrPolling();
+        } else {
+            stopQrPolling();
+        }
+        return () => stopQrPolling();
+    }, [showConnectModal, connectPlatform]);
+
+    const startQrPolling = () => {
+        stopQrPolling();
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`${API_URL}/social/whatsapp-qr`);
+                const data = await res.json();
+                if (data.qr) setQrCode(data.qr);
+                if (data.connected) {
+                    alert('WhatsApp подключен!');
+                    setShowConnectModal(false);
+                    // Refresh accounts if needed
+                }
+            } catch (e) {
+                console.error("QR Polling error", e);
+            }
+        }, 3000);
+        setPollingInterval(interval);
+    };
+
+    const stopQrPolling = () => {
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+            setPollingInterval(null);
+            setQrCode(null);
+        }
+    };
+
+    const [manualToken, setManualToken] = useState('');
+    const isHttp = typeof window !== 'undefined' && window.location.protocol === 'http:';
+
+    const handleFBLogin = () => {
+        if (!(window as any).FB) return alert('Facebook SDK не загружен');
+
+        // Check if we already have a manual token to use
+        if (manualToken && isHttp) {
+            handleManualConnect();
+            return;
+        }
+
+        setLoading(true);
+        (window as any).FB.login(async (response: any) => {
+            if (response.authResponse) {
+                const accessToken = response.authResponse.accessToken;
+                console.log('FB Login success, connecting...', { platform: connectPlatform });
+                try {
+                    await connectAccount(connectPlatform, { type: 'oauth', accessToken });
+                    console.log('Account connected successfully');
+                    setShowConnectModal(false);
+                } catch (err) {
+                    console.error('Failed to connect account', err);
+                    alert('Ошибка при подключении аккаунта. Убедитесь, что токен действителен.');
+                }
+            } else {
+                if (isHttp) {
+                    alert('Facebook Login заблокирован на HTTP. Пожалуйста, используйте ручной ввод токена ниже или переключитесь на HTTPS.');
+                } else {
+                    alert('Пользователь отменил вход или не авторизовал приложение.');
+                }
+            }
+            setLoading(false);
+        }, { scope: 'public_profile,email,instagram_basic,instagram_manage_messages,pages_messaging,pages_show_list' });
+    };
+
+    const handleManualConnect = async () => {
+        if (!manualToken) return;
+        setLoading(true);
+        try {
+            await connectAccount(connectPlatform, { type: 'oauth', accessToken: manualToken });
+            setShowConnectModal(false);
+            setManualToken('');
+            alert('Аккаунт успешно подключен по токену!');
+        } catch (err) {
+            alert('Не удалось подключить аккаунт. Проверьте токен.');
+        }
+        setLoading(false);
+    };
+
+    const isProduction = typeof window !== 'undefined' &&
+        (window.location.hostname.includes('web.app') || window.location.hostname.includes('firebaseapp.com'));
+    const API_URL = isProduction ? '/api' : 'http://localhost:3005/api';
 
     React.useEffect(() => {
         fetchKeys();
@@ -305,7 +392,7 @@ const SettingsIntegrations: React.FC = () => {
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 modal-backdrop" onClick={() => setShowConnectModal(false)}>
                     <div className="bg-ios-card w-full max-w-md rounded-[2.5rem] border border-ios shadow-2xl p-8 animate-ios-slide" onClick={e => e.stopPropagation()}>
                         <h3 className="text-xl font-black text-ios-primary mb-2">Подключение</h3>
-                        <p className="text-[11px] text-ios-secondary font-medium mb-6">Выберите платформу и введите данные аккаунта</p>
+                        <p className="text-[11px] text-ios-secondary font-medium mb-6">Авторизация через официальную страницу</p>
 
                         <div className="flex bg-ios-sub p-1 rounded-2xl border border-ios mb-6">
                             {(['instagram', 'facebook', 'whatsapp'] as const).map(p => (
@@ -315,37 +402,92 @@ const SettingsIntegrations: React.FC = () => {
                             ))}
                         </div>
 
-                        <div className="space-y-4 mb-8">
-                            <div className="space-y-1">
-                                <label className="text-[9px] font-black uppercase text-ios-secondary ml-3">Username / Login</label>
-                                <input value={connectUsername} onChange={e => setConnectUsername(e.target.value)} className="w-full bg-ios-sub border-transparent focus:border-ios-accent border rounded-2xl px-4 py-3 text-sm font-bold outline-none transition-colors" placeholder="@username" />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[9px] font-black uppercase text-ios-secondary ml-3">API Key / Access Token</label>
-                                <input value={connectApiKey} onChange={e => setConnectApiKey(e.target.value)} type="password" className="w-full bg-ios-sub border-transparent focus:border-ios-accent border rounded-2xl px-4 py-3 text-sm font-bold outline-none transition-colors" placeholder="Starts with sk- or EA..." />
-                            </div>
-                            {connectPlatform === 'instagram' && (
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-black uppercase text-ios-secondary ml-3">App Secret (Optional)</label>
-                                    <input value={connectApiSecret} onChange={e => setConnectApiSecret(e.target.value)} type="password" className="w-full bg-ios-sub border-transparent focus:border-ios-accent border rounded-2xl px-4 py-3 text-sm font-bold outline-none transition-colors" placeholder="App Secret if needed" />
+                        <div className="space-y-6 mb-8">
+                            {connectPlatform === 'whatsapp' ? (
+                                <div className="text-center space-y-4 py-4">
+                                    <div className="w-48 h-48 bg-white p-2 rounded-3xl border border-ios mx-auto shadow-sm flex items-center justify-center relative group">
+                                        {qrCode ? (
+                                            <img src={qrCode} alt="WhatsApp QR" className="w-full h-full rounded-2xl" />
+                                        ) : (
+                                            <div className="w-full h-full bg-ios-sub rounded-xl flex flex-col items-center justify-center gap-2 overflow-hidden">
+                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ios-accent"></div>
+                                                <span className="text-[10px] font-bold text-ios-secondary">Генерация QR...</span>
+                                            </div>
+                                        )}
+                                        <div className="absolute inset-0 flex items-center justify-center bg-white/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl">
+                                            <button onClick={startQrPolling} className="text-[10px] font-black uppercase text-ios-primary bg-white px-4 py-2 rounded-full shadow-lg">Обновить QR</button>
+                                        </div>
+                                    </div>
+                                    <p className="text-[10px] text-ios-secondary font-medium px-8 leading-relaxed">
+                                        Откройте WhatsApp на телефоне → Настройки → Связанные устройства → Привязка устройства
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <div className="bg-ios-sub p-6 rounded-3xl border border-ios text-center">
+                                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-sm mx-auto mb-4 ${connectPlatform === 'instagram' ? 'bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600' : 'bg-[#1877F2]'}`}>
+                                            {connectPlatform === 'instagram' ? '📷' : 'f'}
+                                        </div>
+                                        <p className="text-[10px] text-ios-secondary font-medium mb-4">
+                                            Вы будете перенаправлены на официальную страницу {connectPlatform} для авторизации
+                                        </p>
+                                        <button
+                                            onClick={handleFBLogin}
+                                            className={`w-full py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg flex items-center justify-center gap-2 transition-all ${connectPlatform === 'instagram'
+                                                ? 'bg-gradient-to-r from-purple-600 via-red-500 to-yellow-500 text-white'
+                                                : 'bg-[#1877F2] text-white'
+                                                }`}
+                                        >
+                                            {loading ? 'Ожидание входа...' : (
+                                                <>
+                                                    <span>🔐</span> Войти через {connectPlatform.charAt(0).toUpperCase() + connectPlatform.slice(1)}
+                                                </>
+                                            )}
+                                        </button>
+
+                                        {isHttp && (
+                                            <div className="mt-6 pt-6 border-t border-ios text-left">
+                                                <p className="text-[9px] font-black text-ios-secondary uppercase mb-3 flex items-center gap-2">
+                                                    <span className="text-amber-500">⚠️</span> Режим разработки (HTTP)
+                                                </p>
+                                                <p className="text-[8px] text-ios-secondary mb-4 leading-relaxed">
+                                                    Facebook запрещает вход по кнопке через HTTP. Вставьте Access Token вручную из Graph API Explorer:
+                                                </p>
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="password"
+                                                        value={manualToken}
+                                                        onChange={(e) => setManualToken(e.target.value)}
+                                                        placeholder="EAA... (Access Token)"
+                                                        className="flex-1 bg-white border border-ios rounded-xl px-4 py-2 text-[10px] focus:ring-2 focus:ring-ios-accent outline-none"
+                                                    />
+                                                    <button
+                                                        disabled={!manualToken || loading}
+                                                        onClick={handleManualConnect}
+                                                        className="bg-ios-primary text-ios-bg px-4 py-2 rounded-xl text-[9px] font-black uppercase disabled:opacity-50"
+                                                    >
+                                                        Link
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             )}
                         </div>
 
-                        <div className="flex gap-3">
-                            <button onClick={() => {
-                                connectAccount(connectPlatform, {
-                                    username: connectUsername,
-                                    apiKey: connectApiKey,
-                                    apiSecret: connectApiSecret
-                                });
-                                setShowConnectModal(false);
-                                setConnectUsername('');
-                                setConnectApiKey('');
-                                setConnectApiSecret('');
-                            }} className="flex-1 bg-ios-accent text-white py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl spring-press">Подключить</button>
-                            <button onClick={() => setShowConnectModal(false)} className="px-6 bg-ios-sub text-ios-secondary py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest border border-ios spring-press">Отмена</button>
-                        </div>
+                        {connectPlatform === 'whatsapp' && (
+                            <div className="flex gap-3">
+                                <button onClick={() => {
+                                    connectAccount(connectPlatform, { type: 'qr' });
+                                    setShowConnectModal(false);
+                                }} className="flex-1 bg-green-500 text-white py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl spring-press">Я отсканировал</button>
+                                <button onClick={() => setShowConnectModal(false)} className="px-6 bg-ios-sub text-ios-secondary py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest border border-ios spring-press">Отмена</button>
+                            </div>
+                        )}
+                        {connectPlatform !== 'whatsapp' && (
+                            <button onClick={() => setShowConnectModal(false)} className="w-full bg-ios-sub text-ios-secondary py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest border border-ios spring-press">Закрыть</button>
+                        )}
                     </div>
                 </div>
             )}

@@ -4,11 +4,17 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, 
 import { getBusinessInsights } from '../services/geminiService';
 import { useInventory } from '../contexts/InventoryContext';
 import { useCRM } from '../contexts/CRMContext';
+import { Caption } from './ui/Typography';
 
 const AnalyticsView: React.FC = () => {
   const { products } = useInventory();
   const { customers } = useCRM();
   const [strategy, setStrategy] = useState<string>('Провожу глубокий анализ данных...');
+
+  // Margin Calculator State
+  const [calcPrice, setCalcPrice] = useState<number | ''>(5000);
+  const [calcCost, setCalcCost] = useState<number | ''>(2500);
+  const [calcDiscount, setCalcDiscount] = useState<number | ''>(10);
 
   useEffect(() => {
     const fetchDeepInsights = async () => {
@@ -40,6 +46,18 @@ const AnalyticsView: React.FC = () => {
   const topCustomers = useMemo(() => {
     return [...customers].sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 4);
   }, [customers]);
+
+  const marginData = useMemo(() => {
+    const p = Number(calcPrice) || 0;
+    const c = Number(calcCost) || 0;
+    const d = Number(calcDiscount) || 0;
+
+    const finalPrice = p - (p * (d / 100));
+    const profit = finalPrice - c;
+    const margin = finalPrice > 0 ? (profit / finalPrice) * 100 : 0;
+
+    return { finalPrice, profit, margin };
+  }, [calcPrice, calcCost, calcDiscount]);
 
   return (
     <div className="space-y-6 pb-40 animate-ios-slide">
@@ -131,6 +149,59 @@ const AnalyticsView: React.FC = () => {
             </div>
           </div>
           <button className="mt-8 w-full py-4 bg-white text-ios-accent rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl">Полный аудит</button>
+        </div>
+      </div>
+
+      {/* Margin Calculator Section */}
+      <div className="bg-ios-card p-8 rounded-[3rem] border border-ios shadow-ios mt-6">
+        <div className="flex items-center gap-4 mb-6">
+          <span className="text-3xl bg-amber-100 dark:bg-amber-900/50 w-12 h-12 flex items-center justify-center rounded-2xl shadow-sm">🧮</span>
+          <div>
+            <h3 className="text-[10px] font-black text-ios-primary uppercase tracking-widest">Расчет Маржинальности</h3>
+            <p className="text-[10px] text-ios-secondary font-bold uppercase tracking-widest mt-0.5">Проверка скидок и прибыли</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="space-y-4">
+            {[
+              { label: 'Цена продажи (₸)', val: calcPrice, set: setCalcPrice },
+              { label: 'Себестоимость (₸)', val: calcCost, set: setCalcCost },
+              { label: 'Скидка (%)', val: calcDiscount, set: setCalcDiscount }
+            ].map((field, i) => (
+              <div key={i}>
+                <label className="text-xs font-semibold text-ios-secondary ml-3 mb-1.5 block uppercase tracking-wide">{field.label}</label>
+                <input
+                  type="number"
+                  value={field.val}
+                  onChange={e => field.set(Number(e.target.value))}
+                  className="w-full bg-ios-sub rounded-xl p-4 text-sm font-bold border border-transparent focus:border-ios-accent focus:bg-ios-bg transition-all outline-none shadow-sm"
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="md:col-span-2 bg-ios-sub/50 rounded-3xl p-6 md:p-8 flex flex-col justify-center border border-ios relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-3xl rounded-full pointer-events-none"></div>
+            <div className="grid grid-cols-3 gap-4 text-center divide-x divide-ios-border relative z-10">
+              <div>
+                <Caption className="mb-2">Цена со скидкой</Caption>
+                <p className="text-xl md:text-2xl font-bold text-ios-primary tracking-tight">₸{marginData.finalPrice.toLocaleString()}</p>
+              </div>
+              <div>
+                <Caption className="mb-2">Чистая прибыль</Caption>
+                <p className={`text-xl md:text-2xl font-bold tracking-tight ${marginData.profit > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  ₸{marginData.profit.toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <Caption className="mb-2">Маржа</Caption>
+                <p className={`text-xl md:text-2xl font-bold tracking-tight ${marginData.margin > 30 ? 'text-green-500' : marginData.margin > 10 ? 'text-amber-500' : 'text-red-500'}`}>
+                  {marginData.margin.toFixed(1)}%
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

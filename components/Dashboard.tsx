@@ -6,11 +6,14 @@ import { useInventory } from '../contexts/InventoryContext';
 import { useCRM } from '../contexts/CRMContext';
 import { useApp } from '../contexts/AppContext';
 
+import { Card } from './ui/Card';
+import { Button } from './ui/Button';
+import { Title, Caption } from './ui/Typography';
+
 const Dashboard: React.FC = () => {
   const { products } = useInventory();
   const { customers } = useCRM();
   const { activeCompany } = useApp();
-  const branches = activeCompany.branches;
   const [insights, setInsights] = useState<string>('Провожу глубокий анализ данных...');
 
   const soldProducts = products.filter(p => p.status === 'sold');
@@ -19,7 +22,6 @@ const Dashboard: React.FC = () => {
   const profit = revenue - costs;
   const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : '0';
 
-  // Dummy data for chart if empty
   const chartData = soldProducts.length > 0
     ? soldProducts.map((p, i) => ({ n: i.toString(), v: p.price, c: p.costPrice || 0 }))
     : [
@@ -46,44 +48,42 @@ const Dashboard: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6 animate-ios-slide pb-20">
+    <div className="space-y-6 pb-20 animate-fade-in-up">
       <div className="flex flex-col md:flex-row md:items-end justify-between px-2 gap-4">
         <div>
-          <h2 className="text-3xl md:text-4xl font-black text-ios-primary tracking-tighter">Сводка</h2>
-          <p className="text-[10px] font-black text-ios-secondary uppercase tracking-[0.2em] mt-1">Данные по всей сети</p>
+          <Title>Сводка</Title>
+          <Caption className="mt-1">Данные по всей сети</Caption>
         </div>
-        <div className="bg-ios-card px-4 py-3 rounded-2xl border border-ios flex items-center gap-3 shadow-sm self-start">
+        <Card className="!p-3 !rounded-2xl flex items-center gap-3 self-start">
           <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-          <span className="text-[10px] font-black uppercase text-ios-primary">Live: 4 активных сессии</span>
-        </div>
+          <span className="text-xs font-bold uppercase text-ios-primary">Live: 4 активных сессии</span>
+        </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* TOP STATS */}
-        <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: 'Выручка', val: `₸${revenue.toLocaleString()}`, color: 'text-ios-primary', icon: '💰' },
             { label: 'Профит', val: `₸${profit.toLocaleString()}`, color: 'text-green-500', icon: '📈' },
             { label: 'Маржа', val: `${margin}%`, color: 'text-ios-accent', icon: '💎' },
             { label: 'Клиенты', val: customers.length, color: 'text-ios-primary', icon: '👥' }
           ].map((s, i) => (
-            <div key={i} className="bg-ios-card p-4 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border border-ios shadow-ios group hover:shadow-ios-heavy transition-all">
-              <span className="text-xl mb-3 md:mb-4 block group-hover:scale-110 transition-transform">{s.icon}</span>
-              <p className="text-[8px] font-black text-ios-secondary uppercase tracking-widest mb-1 opacity-60">{s.label}</p>
-              <h3 className={`text-lg md:text-xl font-black tracking-tight ${s.color} truncate`}>{s.val}</h3>
-            </div>
+            <Card key={i} hoverEffect className="!p-5 flex flex-col justify-between aspect-[4/3] md:aspect-auto">
+              <div>
+                <span className="text-2xl mb-2 block">{s.icon}</span>
+                <Caption className="mb-1 opacity-70">{s.label}</Caption>
+              </div>
+              <h3 className={`text-xl font-bold tracking-tight ${s.color} truncate`}>{s.val}</h3>
+            </Card>
           ))}
 
           {/* MAIN CHART */}
-          <div className="col-span-full bg-ios-card p-6 md:p-8 rounded-[2.5rem] md:rounded-[3rem] border border-ios shadow-ios">
-            <div className="flex justify-between items-center mb-6 md:mb-10">
-              <h4 className="text-[10px] font-black text-ios-primary uppercase tracking-widest">Продажи vs Закупы</h4>
-              <div className="flex gap-2">
-                <div className="w-3 h-3 rounded-full bg-ios-accent"></div>
-                <div className="w-3 h-3 rounded-full bg-ios-accent opacity-30"></div>
-              </div>
+          <Card className="col-span-full min-h-[300px]">
+            <div className="flex justify-between items-center mb-6">
+              <Caption>Продажи vs Закупы</Caption>
             </div>
-            <div className="h-48 md:h-64 w-full">
+            <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData}>
                   <defs>
@@ -92,39 +92,41 @@ const Dashboard: React.FC = () => {
                       <stop offset="95%" stopColor="var(--ios-accent)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <Tooltip contentStyle={{ borderRadius: '20px', border: 'none', background: 'var(--ios-card)', fontWeight: 800, fontSize: '10px' }} />
-                  <Area type="monotone" dataKey="v" stroke="var(--ios-accent)" strokeWidth={4} fill="url(#vGrad)" />
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', background: 'var(--ios-card)', fontWeight: 600, fontSize: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                  <Area type="monotone" dataKey="v" stroke="var(--ios-accent)" strokeWidth={3} fill="url(#vGrad)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* SIDEBAR: AI & ACTIVITY */}
-        <div className="space-y-4 md:space-y-6">
-          <div className="bg-ios-accent p-6 md:p-8 rounded-[2.5rem] md:rounded-[3rem] text-white shadow-ios-heavy relative overflow-hidden">
+        <div className="space-y-6">
+          <div className="bg-ios-accent p-6 rounded-3xl text-white shadow-lg relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl rounded-full"></div>
-            <h3 className="text-lg md:text-xl font-black mb-4 flex items-center gap-2">✨ AI Советы</h3>
-            <p className="text-[10px] font-medium leading-relaxed opacity-90 italic mb-4">
+            <h3 className="text-lg font-bold mb-3 flex items-center gap-2">✨ AI Советы</h3>
+            <p className="text-sm font-medium leading-relaxed opacity-90 italic mb-6">
               {insights.split('.')[0]}.
             </p>
-            <button className="w-full py-4 bg-white text-ios-accent rounded-2xl font-black text-[9px] uppercase tracking-widest shadow-xl">Сгенерировать отчет</button>
+            <Button variant="secondary" size="sm" className="w-full bg-white/20 text-white backdrop-blur-md hover:bg-white/30 border-none">
+              Сгенерировать отчет
+            </Button>
           </div>
 
-          <div className="bg-ios-card p-6 rounded-[2.5rem] border border-ios shadow-ios">
-            <h3 className="text-[10px] font-black text-ios-primary uppercase tracking-widest mb-4">Лог активности</h3>
+          <Card>
+            <Caption className="mb-4">Лог активности</Caption>
             <div className="space-y-4">
               {activityLog.map((log, i) => (
-                <div key={i} className="flex gap-4 items-start">
-                  <span className="text-lg">{log.icon}</span>
+                <div key={i} className="flex gap-3 items-start">
+                  <span className="text-lg mt-0.5">{log.icon}</span>
                   <div className="min-w-0 flex-1">
-                    <p className={`text-[10px] font-black truncate ${log.color}`}>{log.action}</p>
-                    <p className="text-[8px] font-bold text-ios-secondary uppercase">{log.user} • {log.time}</p>
+                    <p className={`text-xs font-semibold truncate ${log.color}`}>{log.action}</p>
+                    <p className="text-[10px] font-medium text-ios-secondary uppercase mt-0.5">{log.user} • {log.time}</p>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>

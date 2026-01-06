@@ -12,4 +12,10 @@ router.get('/messages', socialController.getMessages);
 // POST /api/social/reply
 router.post('/reply', socialController.sendReply);
 
+// WhatsApp QR
+router.get('/whatsapp-qr', socialController.getWhatsAppQR);
+
+// OAuth Connection
+router.post('/connect-oauth', socialController.connectOAuth);
+
 module.exports = router;

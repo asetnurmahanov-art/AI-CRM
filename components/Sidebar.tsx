@@ -1,31 +1,23 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { View } from '../types';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
+import { NAV_ITEMS } from '../config/navigation';
 
 const Sidebar: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const { currentView, setView, activeCompany, companies, setActiveCompany } = useApp();
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuth(); // Keep user for avatar
 
   const handleLogout = async () => {
-    await logout();
+    // onLogout prop from adaptive layout already handles auth logout if passed
+    // But to be safe lets use the one from context if onLogout is just a callback
     onLogout();
   };
 
   const [showCompanyMenu, setShowCompanyMenu] = useState(false);
+
+  if (!activeCompany) return null; // Safety guard
   const companyRef = useRef<HTMLDivElement>(null);
 
-  const menuItems = [
-    { id: View.DASHBOARD, label: 'Обзор', icon: '🏠' },
-    { id: View.INVENTORY, label: 'Склад', icon: '📦' },
-    { id: View.SOCIAL, label: 'Чаты', icon: '💬', badge: '3' },
-    { id: View.SCHEDULER, label: 'Контент', icon: '📅' },
-    { id: View.CUSTOMERS, label: 'Клиенты', icon: '👥' },
-    { id: View.ANALYTICS, label: 'Аналитика', icon: '📈' },
-    { id: View.SETTINGS, label: 'Настройки', icon: '⚙️' },
-    { id: View.TOOLS, label: 'Инструменты', icon: '🛠️' },
-  ];
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -75,7 +67,7 @@ const Sidebar: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 space-y-1 overflow-y-auto no-scrollbar pt-2">
-        {menuItems.map((item) => (
+        {NAV_ITEMS.map((item) => (
           <button
             key={item.id}
             onClick={() => setView(item.id)}

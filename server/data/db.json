@@ -1,0 +1,15 @@
+{
+  "messages": [
+    {
+      "id": "m_mid.1234567890",
+      "senderId": "123_SENDER_ID",
+      "recipientId": "17841400000000000",
+      "timestamp": 1716912345678,
+      "type": "message",
+      "text": "Hello, I want to buy your AI product!",
+      "isEcho": false,
+      "attachments": [],
+      "savedAt": "2026-01-04T13:19:20.988Z"
+    }
+  ]
+}

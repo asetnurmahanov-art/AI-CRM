@@ -2,6 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { CustomerStatus } from '../types';
 import { useCRM } from '../contexts/CRMContext';
+import { Card } from './ui/Card';
+import { Button } from './ui/Button';
+import { Title, Subtitle, Caption } from './ui/Typography';
+import { View } from '../types';
+
 
 const CRMManager: React.FC = () => {
   const { customers, addCustomer, updateCustomer } = useCRM();
@@ -199,16 +204,21 @@ const CRMManager: React.FC = () => {
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-2">
         <div>
-          <h2 className="text-3xl md:text-4xl font-black tracking-tight text-ios-primary">Клиенты</h2>
-          <p className="text-[10px] font-black text-ios-secondary uppercase tracking-widest mt-2">{activeTab === 'kanban' ? 'Воронка продаж' : 'Автоматизация'}</p>
+          <Title>Клиенты</Title>
+          <Caption className="mt-2">{activeTab === 'kanban' ? 'Воронка продаж' : 'Автоматизация'}</Caption>
         </div>
-        <div className="bg-ios-card p-1.5 rounded-2xl flex self-start md:self-auto border border-ios shadow-sm">
+        <Card className="!p-1.5 flex self-start md:self-auto gap-1">
           {['kanban', 'automation'].map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab as any)} className={`px-4 md:px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-indigo-600 text-white shadow-lg' : 'text-ios-secondary'}`}>
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab as any)}
+              className={`px-4 md:px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${activeTab === tab ? 'bg-indigo-600 text-white shadow-md' : 'text-ios-secondary hover:bg-ios-sub'
+                }`}
+            >
               {tab === 'kanban' ? 'Воронка' : 'Авто'}
             </button>
           ))}
-        </div>
+        </Card>
       </div>
 
       {activeTab === 'kanban' ? (
@@ -228,7 +238,7 @@ const CRMManager: React.FC = () => {
                     }`}
                 >
                   <div className={`w-2 h-2 rounded-full ${stage.color}`}></div>
-                  <span className="text-[10px] font-black uppercase">{stage.label}</span>
+                  <span className="text-[10px] font-bold uppercase">{stage.label}</span>
                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${isActive ? 'bg-ios-bg text-ios-primary' : 'bg-ios-sub text-ios-text'}`}>{count}</span>
                 </button>
               )
@@ -249,7 +259,7 @@ const CRMManager: React.FC = () => {
               return (
                 <div
                   key={stage.status}
-                  className={`${isMobile ? 'w-full' : 'w-[300px] shrink-0'} flex flex-col gap-5 animate-ios-slide`}
+                  className={`${isMobile ? 'w-full' : 'w-[300px] shrink-0'} flex flex-col gap-4 animate-fade-in-up`}
                   onDragOver={(e) => !isMobile && handleDragOver(e, stage.status)}
                   onDrop={(e) => !isMobile && handleDrop(e, stage.status)}
                   onDragLeave={!isMobile ? handleDragLeave : undefined}
@@ -257,62 +267,63 @@ const CRMManager: React.FC = () => {
                   {!isMobile && (
                     <div className="flex items-center justify-between px-2">
                       <div className="flex items-center gap-2">
-                        <div className={`w-2.5 h-2.5 rounded-full ${stage.color}`}></div>
-                        <span className="font-black text-[11px] uppercase tracking-widest text-ios-primary">{stage.label}</span>
-                        <span className="bg-ios-card border border-ios px-2 py-0.5 rounded-lg text-[9px] font-black text-ios-secondary">{stageCustomers.length}</span>
+                        <div className={`w-2 h-2 rounded-full ${stage.color}`}></div>
+                        <span className="font-bold text-[11px] uppercase tracking-wide text-ios-primary">{stage.label}</span>
+                        <span className="bg-ios-card border border-ios px-2 py-0.5 rounded-lg text-[10px] font-bold text-ios-secondary">{stageCustomers.length}</span>
                       </div>
-                      <span className="text-[10px] font-black text-ios-secondary">₸{stageCustomers.reduce((a, b) => a + b.totalSpent, 0).toLocaleString()}</span>
+                      <span className="text-[10px] font-bold text-ios-secondary">₸{stageCustomers.reduce((a, b) => a + b.totalSpent, 0).toLocaleString()}</span>
                     </div>
                   )}
 
                   <div className={`
-                     ${isMobile ? '' : 'rounded-[2.5rem] p-4 border-2 bg-ios-card border-ios'} 
-                     flex-1 space-y-3 transition-all duration-300
+                     ${isMobile ? '' : 'rounded-3xl p-4 border-2 bg-ios-card/50 border-transparent'} 
+                     flex-1 space-y-3 transition-all duration-300 min-h-[150px]
                      ${isOver ? 'bg-indigo-500/10 border-indigo-400 border-dashed scale-[1.02]' : ''}
                   `}>
                     {stageCustomers.map(customer => (
-                      <div
+                      <Card
                         key={customer.id}
                         draggable={!isMobile}
-                        onDragStart={(e) => handleDragStart(e, customer.id)}
+                        onDragStart={(e: React.DragEvent) => handleDragStart(e, customer.id)}
                         onClick={() => setSelectedCustomer(customer)}
-                        className={`bg-ios-card p-5 rounded-[1.5rem] md:rounded-[2rem] border border-ios shadow-sm md:bg-ios-sub cursor-pointer active:scale-[0.98] hover:shadow-xl group transition-all relative z-10 ${draggedCustomerId === customer.id ? 'opacity-40 grayscale scale-95' : 'opacity-100'
-                          }`}
+                        className={`!p-4 group relative z-10 ${draggedCustomerId === customer.id ? 'opacity-40 grayscale scale-95' : ''}`}
+                        hoverEffect
                       >
                         <div className="flex justify-between items-start mb-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-ios-sub md:bg-ios-card border border-ios text-ios-primary flex items-center justify-center text-sm font-black pointer-events-none shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-ios-sub md:bg-ios-bg border border-ios text-ios-primary flex items-center justify-center text-sm font-bold pointer-events-none shrink-0">
                               {customer.name.charAt(0)}
                             </div>
                             <div className="pointer-events-none min-w-0">
-                              <p className="text-xs font-black truncate text-ios-primary">{customer.name}</p>
-                              <p className="text-[8px] font-black text-ios-secondary uppercase mt-0.5 truncate">{customer.handle}</p>
+                              <p className="text-sm font-semibold truncate text-ios-primary leading-tight">{customer.name}</p>
+                              <p className="text-[10px] font-medium text-ios-secondary uppercase mt-0.5 truncate">{customer.handle}</p>
                             </div>
                           </div>
                           <span className="text-lg opacity-60 md:opacity-40 group-hover:opacity-100 transition-opacity pointer-events-none">
                             {customer.platform === 'instagram' ? '📸' : customer.platform === 'whatsapp' ? '💬' : '👤'}
                           </span>
                         </div>
-                        <div className="flex justify-between items-center text-[10px] font-black pointer-events-none">
-                          <span className="text-ios-primary bg-ios-sub md:bg-ios-card px-2 py-1 rounded-lg border border-ios">₸{customer.totalSpent.toLocaleString()}</span>
+                        <div className="flex justify-between items-center text-[10px] font-bold pointer-events-none">
+                          <span className="text-ios-primary bg-ios-sub md:bg-ios-bg px-2 py-1 rounded-lg border border-ios">₸{customer.totalSpent.toLocaleString()}</span>
                         </div>
-                      </div>
+                      </Card>
                     ))}
 
                     {stageCustomers.length === 0 && (
                       <div className="py-10 text-center opacity-30">
                         <p className="text-4xl mb-2">🍃</p>
-                        <p className="text-[9px] font-black uppercase">Пусто</p>
+                        <p className="text-[10px] font-bold uppercase">Пусто</p>
                       </div>
                     )}
 
                     {stage.status === 'new' && (
-                      <button
+                      <Button
+                        variant="secondary"
                         onClick={() => setShowAddLead(true)}
-                        className="w-full py-4 border-2 border-dashed border-ios rounded-[2rem] text-[10px] font-black text-ios-secondary uppercase tracking-widest hover:border-indigo-400 hover:text-indigo-400 transition-all bg-ios-sub/30"
+                        className="w-full border-dashed border-2 border-ios-border bg-transparent hover:border-indigo-400 hover:text-indigo-400 !text-ios-secondary"
                       >
                         + Лид
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>

@@ -11,7 +11,12 @@ const app = express();
 // Middleware
 app.use(morgan('dev')); // Logger
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({
+  limit: '50mb',
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 
 // Security (Helmet + Rate Limiter)
 setupSecurity(app);

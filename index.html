@@ -340,6 +340,19 @@
   }
 }
 </script>
+  <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+  <script>
+    window.fbAsyncInit = function () {
+      FB.init({
+        appId: '26221506697451804',
+        cookie: true,
+        xfbml: true,
+        version: 'v19.0'
+      });
+
+      FB.AppEvents.logPageView();
+    };
+  </script>
 </head>
 
 <body class="theme-gray">

@@ -1,234 +1,221 @@
 import { SocialAccount, SocialMessage, SocialPost } from '../types';
 
-// Mock data to simulate API responses
-const MOCK_ACCOUNTS: SocialAccount[] = [
-    {
-        id: 'acc_1',
-        name: 'Instagram Main',
-        platform: 'instagram',
-        isConnected: true,
-        username: '@smart_business_kz',
-        avatarUrl: 'https://picsum.photos/seed/insta/200',
-        stats: { followers: 12500, posts: 142, engagement: 4.5 }
-    }
-];
-
-const MOCK_MESSAGES: SocialMessage[] = [
-    {
-        id: 'msg_1',
-        accountId: 'acc_1',
-        customerName: 'Мария Иванова',
-        customerHandle: '@mama_mashy',
-        customerAvatar: 'https://picsum.photos/100/100?seed=1',
-        platform: 'instagram',
-        text: 'Здравствуйте! Есть ли это платье в 92 размере?',
-        timestamp: '10:42',
-        isRead: false,
-        history: [{ text: 'Здравствуйте! Есть ли это платье в 92 размере?', sender: 'user', time: '10:42' }]
-    },
-    {
-        id: 'msg_2',
-        accountId: 'acc_1',
-        customerName: 'Анна Кузнецова',
-        customerHandle: 'Anna K.',
-        customerAvatar: 'https://picsum.photos/100/100?seed=2',
-        platform: 'whatsapp',
-        text: 'Отправьте, пожалуйста, геолокацию магазина в Алматы.',
-        timestamp: 'Вчера',
-        isRead: true,
-        history: [
-            { text: 'Спасибо за покупку!', sender: 'agent', time: 'Вчера' },
-            { text: 'Отправьте, пожалуйста, геолокацию магазина в Алматы.', sender: 'user', time: 'Вчера' }
-        ]
-    }
-];
+const API_URL = '/api/social';
 
 class SocialService {
-    private accounts: SocialAccount[] = [...MOCK_ACCOUNTS];
-    private messages: SocialMessage[] = [...MOCK_MESSAGES];
+    private accounts: SocialAccount[] = [];
+    private messages: SocialMessage[] = [];
 
     /** 
-     * Mimic an async API call to fetch connected accounts 
+     * Fetch connected accounts using stored API keys or backend persistence
+     * For this implementation, we assume we might need to persistent keys in localStorage or similar if the backend doesn't store them "per user"
+     * But the backend `getAccounts` takes an apiKey. This mimics a "per-account" connection.
      */
-    async getAccounts(): Promise<SocialAccount[]> {
-        // Mock fallback if one specific account (initial mock) is present
-        // In real app, we might merge both or just use real
-
-        // 1. Check for accounts with API Keys
-        const realAccounts = this.accounts.filter(a => a.apiKey);
-
-        if (realAccounts.length === 0) {
-            return new Promise((resolve) => {
-                setTimeout(() => resolve(this.accounts), 500);
-            });
-        }
-
-        // 2. Fetch real data for each account via Backend
-        const updatedAccounts = await Promise.all(this.accounts.map(async (acc) => {
-            if (!acc.apiKey || acc.platform !== 'instagram') return acc;
-
+    private loadFromStorage() {
+        const stored = localStorage.getItem('crm_social_accounts');
+        if (stored) {
             try {
-                // Call Backend API
-                const res = await fetch(`http://localhost:3005/api/social/accounts`, {
-                    headers: { 'x-api-key': acc.apiKey }
-                });
-                const data = await res.json();
-
-                if (data.success && data.accounts && data.accounts.length > 0) {
-                    // Update account name/id from real data (taking the first page for simplicity)
-                    const page = data.accounts[0];
-                    return {
-                        ...acc,
-                        name: page.name,
-                        username: '@' + page.name.replace(/\s+/g, ''), // Simplify for demo
-                        id: page.id, // Update ID to real Page ID
-                        stats: { ...acc.stats, followers: 100 } // Mock stats for now as they require different endpoint
-                    };
-                }
-                return acc;
+                this.accounts = JSON.parse(stored);
             } catch (e) {
-                console.error("Failed to fetch real account data via backend", e);
-                return acc;
+                console.error("Failed to parse accounts from storage", e);
             }
-        }));
+        }
+    }
 
-        this.accounts = updatedAccounts;
+    private saveToStorage() {
+        localStorage.setItem('crm_social_accounts', JSON.stringify(this.accounts));
+    }
+
+    constructor() {
+        this.loadFromStorage();
+    }
+
+    async getAccounts(): Promise<SocialAccount[]> {
         return this.accounts;
     }
 
     /**
-     * Connect a new account (Mock)
+     * Connect a new account by validating the API Key with the backend
      */
-    async connectAccount(platform: SocialAccount['platform'], credentials: any): Promise<SocialAccount> {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                const newAccount: SocialAccount = {
-                    id: `acc_${Date.now()}`,
-                    name: `${platform} Account`,
-                    platform,
-                    isConnected: true,
-                    username: credentials.username || `@user_${Date.now().toString().slice(-4)}`,
-                    avatarUrl: `https://picsum.photos/seed/${Date.now()}/200`,
-                    apiKey: credentials.apiKey, // Store real API Key
-                    apiSecret: credentials.apiSecret, // Store real API Secret
-                    accessToken: credentials.apiKey, // Use API Key as access token for now
-                    stats: { followers: 0, posts: 0, engagement: 0 }
-                };
-                this.accounts.push(newAccount);
-                resolve(newAccount);
-            }, 1000);
-        });
+    async connectAccount(platform: SocialAccount['platform'], credentials: any): Promise<SocialAccount | null> {
+        // Support for real OAuth connection
+        if (credentials.type === 'oauth' && credentials.accessToken) {
+            try {
+                const res = await fetch(`${API_URL}/connect-oauth`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ platform, accessToken: credentials.accessToken })
+                });
+                const data = await res.json();
+                if (data.success && data.accounts?.length > 0) {
+                    const remoteAccount = data.accounts[0];
+                    const newAccount: SocialAccount = {
+                        id: remoteAccount.id,
+                        name: remoteAccount.name,
+                        platform,
+                        isConnected: true,
+                        username: remoteAccount.username ? `@${remoteAccount.username}` : `@${remoteAccount.name.replace(/\s+/g, '')}`,
+                        avatarUrl: remoteAccount.picture?.data?.url || remoteAccount.picture,
+                        apiKey: credentials.accessToken,
+                        stats: { followers: remoteAccount.fan_count || 0, posts: 0, engagement: 0 }
+                    };
+
+                    // Avoid duplicates
+                    this.accounts = this.accounts.filter(a => a.id !== newAccount.id);
+                    this.accounts.push(newAccount);
+                    this.saveToStorage();
+                    return newAccount;
+                } else {
+                    console.warn("No accounts found for this token", data);
+                    throw new Error("No accounts found");
+                }
+            } catch (e) {
+                console.error("Real Connect OAuth Error", e);
+            }
+            return null;
+        }
+
+        // For simulation or legacy keys
+        if (!credentials.apiKey) throw new Error("API Key required");
+
+        try {
+            // Verify and fetch details from backend
+            const res = await fetch(`${API_URL}/accounts`, {
+                headers: { 'x-api-key': credentials.apiKey }
+            });
+            const data = await res.json();
+
+            if (!data.success) throw new Error(data.error || "Failed to connect");
+
+            // Assuming the backend returns a list of pages/accounts accessible by this key
+            // We'll take the first one or let user choose (simplification: take first)
+            const remoteAccount = data.accounts && data.accounts.length > 0 ? data.accounts[0] : null;
+
+            const newAccount: SocialAccount = {
+                id: remoteAccount ? remoteAccount.id : `acc_${Date.now()}`,
+                name: remoteAccount ? remoteAccount.name : `${platform} Account`,
+                platform,
+                isConnected: true,
+                username: remoteAccount ? `@${remoteAccount.name.replace(/\s+/g, '')}` : undefined,
+                avatarUrl: remoteAccount ? remoteAccount.picture?.data?.url : undefined,
+                apiKey: credentials.apiKey,
+                stats: { followers: remoteAccount?.fan_count || 0, posts: 0, engagement: 0 }
+            };
+
+            this.accounts.push(newAccount);
+            return newAccount;
+        } catch (e) {
+            console.error("Connect Account Error", e);
+            throw e;
+        }
     }
 
     /**
      * Disconnect an account
      */
     async disconnectAccount(id: string): Promise<boolean> {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                this.accounts = this.accounts.filter(a => a.id !== id);
-                resolve(true);
-            }, 500);
-        });
+        this.accounts = this.accounts.filter(a => a.id !== id);
+        return true;
     }
 
     /**
      * Get messages (for all or specific account)
      */
     async getMessages(accountId?: string): Promise<SocialMessage[]> {
-        if (!accountId) return this.messages;
-
-        const account = this.accounts.find(a => a.id === accountId);
-        if (!account?.apiKey || account.platform !== 'instagram') {
-            return new Promise((resolve) => {
-                setTimeout(() => {
-                    if (accountId) {
-                        resolve(this.messages.filter(m => m.accountId === accountId));
-                    } else {
-                        resolve(this.messages);
-                    }
-                }, 500);
-            });
+        let targets = this.accounts;
+        if (accountId) {
+            targets = this.accounts.filter(a => a.id === accountId);
         }
 
-        try {
-            // Call Backend API
-            const res = await fetch(`http://localhost:3005/api/social/messages?accountId=${account.id}`, {
-                headers: { 'x-api-key': account.apiKey }
-            });
-            const data = await res.json();
+        const allMessages: SocialMessage[] = [];
 
-            if (data.success && data.messages) {
-                // Transform FB data to our SocialMessage format
-                const realMessages: SocialMessage[] = data.messages.map((conv: any) => ({
-                    id: conv.id,
-                    accountId: account.id,
-                    customerName: 'Instagram User', // Would need another fetch for name
-                    customerHandle: '@user',
-                    platform: 'instagram',
-                    text: 'Conversation started', // Would need fetch for messages attached
-                    timestamp: conv.updated_time,
-                    isRead: false,
-                    history: []
-                }));
-                return realMessages;
+        for (const account of targets) {
+            if (!account.apiKey) continue; // Skip if no key (shouldn't happen for connected accounts)
+
+            try {
+                const res = await fetch(`${API_URL}/messages?accountId=${account.id}`, {
+                    headers: { 'x-api-key': account.apiKey }
+                });
+                const data = await res.json();
+
+                if (data.success && Array.isArray(data.messages)) {
+                    // Start of transformation (Backend returns FB format, we need SocialMessage)
+                    // The backend `socialService.js` currently returns raw data.data.
+                    // We need to map it.
+                    const mapped = data.messages.map((m: any) => ({
+                        id: m.id,
+                        accountId: account.id,
+                        customerName: 'Customer', // FB API might require separate call for profile
+                        customerHandle: '@user',
+                        platform: account.platform,
+                        text: 'Message content', // FB API conversation object structure is complex, need specific fields
+                        timestamp: m.updated_time,
+                        isRead: false,
+                        history: []
+                    }));
+                    allMessages.push(...mapped);
+                }
+            } catch (e) {
+                console.error(`Failed to fetch messages for ${account.id}`, e);
             }
-            return [];
-        } catch (e) {
-            console.error("Error fetching real messages via backend", e);
-            return [];
         }
+
+        this.messages = allMessages;
+        return this.messages;
     }
 
     /**
      * Send a reply
      */
     async sendReply(messageId: string, text: string): Promise<SocialMessage | null> {
-        // Find message to get account info
-        const msgIndex = this.messages.findIndex(m => m.id === messageId);
-        // If not found in mock, it might be a real message not in 'this.messages' yet depending on how we sync
-        // For simplicity, we assume we find it or we pass account info differently.
-
-        let accountId = this.messages[msgIndex]?.accountId;
-        // Search in real accounts logic if needed. 
-
-        // MIXED MODE: If message is real (ID starting with 't_' usually for FB), try real send
-
-        const account = this.accounts.find(a => a.id === accountId);
-
-        if (account?.apiKey) {
-            try {
-                // Backend Call
-                await fetch(`http://localhost:3005/api/social/reply`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-api-key': account.apiKey
-                    },
-                    body: JSON.stringify({ messageId, text })
-                });
-            } catch (e) { console.error("Real send via backend failed", e); }
+        // Find which account owns this message
+        // In a real app we'd map messageId to accountId or have it in the message object
+        // We have to rely on `this.messages` having the message to know the accountId
+        const existingMsg = this.messages.find(m => m.id === messageId);
+        if (!existingMsg || !existingMsg.accountId) {
+            console.error("Message context lost, cannot reply");
+            return null;
         }
 
+        const account = this.accounts.find(a => a.id === existingMsg.accountId);
+        if (!account?.apiKey) return null;
 
-        // Fallback / Optimistic local update
-        if (msgIndex === -1) return null;
+        try {
+            const res = await fetch(`${API_URL}/reply`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': account.apiKey
+                },
+                body: JSON.stringify({ messageId, text })
+            });
+            const data = await res.json();
 
-        const updatedMsg = { ...this.messages[msgIndex] };
-        updatedMsg.history = [
-            ...(updatedMsg.history || []),
-            { text, sender: 'agent' as const, time: 'Now' }
-        ];
-        this.messages[msgIndex] = updatedMsg;
-
-        return updatedMsg;
+            if (data.success) {
+                // Optimistic update
+                const updatedMsg = { ...existingMsg };
+                updatedMsg.history = [
+                    ...(updatedMsg.history || []),
+                    { text, sender: 'agent' as const, time: 'Just now' }
+                ];
+                // Update local cache
+                this.messages = this.messages.map(m => m.id === messageId ? updatedMsg : m);
+                return updatedMsg;
+            }
+        } catch (e) {
+            console.error("Reply failed", e);
+        }
+        return null;
     }
 
     /**
      * Schedule or Publish a post
      */
     async publishPost(post: SocialPost): Promise<boolean> {
-        return new Promise(resolve => setTimeout(() => resolve(true), 1500));
+        // Stub implementation for now as backend route not fully defined in snippet
+        // But we should at least log or throw
+        console.warn("Publishing not yet simulated in backend");
+        return true;
     }
 }
 

@@ -6,25 +6,34 @@ import { useInventory } from '../contexts/InventoryContext';
 import { useSocial } from '../contexts/SocialContext';
 import { useApp } from '../contexts/AppContext';
 import { View } from '../types';
+import { Card } from './ui/Card';
+import { Button } from './ui/Button';
+import { Title, Subtitle, Caption } from './ui/Typography';
+
 
 
 const ProductCard = React.memo(({ product, onClick }: { product: Product, onClick: (p: Product) => void }) => (
-  <div onClick={() => onClick(product)} className={`bg-ios-card rounded-[1.5rem] md:rounded-[2.5rem] border border-ios overflow-hidden shadow-sm hover:shadow-ios-heavy transition-all spring-press cursor-pointer group relative h-full flex flex-col ${product.status === 'sold' ? 'opacity-50 grayscale' : product.status === 'reserved' ? 'border-amber-400' : ''}`}>
-    {product.status === 'reserved' && <div className="absolute top-0 right-0 bg-amber-400 text-white text-[8px] font-black uppercase px-2 py-1 md:px-3 rounded-bl-xl z-10">Бронь</div>}
-    {product.status === 'sold' && <div className="absolute top-0 right-0 bg-ios-primary text-ios-bg text-[8px] font-black uppercase px-2 py-1 md:px-3 rounded-bl-xl z-10">Продано</div>}
+  <Card
+    onClick={() => onClick(product)}
+    hoverEffect
+    className={`!p-0 overflow-hidden relative group h-full flex flex-col ${product.status === 'sold' ? 'opacity-50 grayscale' : product.status === 'reserved' ? 'border-amber-400' : ''}`}
+  >
+    {product.status === 'reserved' && <div className="absolute top-0 right-0 bg-amber-400 text-white text-[9px] font-bold uppercase px-3 py-1 rounded-bl-xl z-10">Бронь</div>}
+    {product.status === 'sold' && <div className="absolute top-0 right-0 bg-ios-text text-ios-bg text-[9px] font-bold uppercase px-3 py-1 rounded-bl-xl z-10">Продано</div>}
 
     <div className="aspect-square bg-ios-sub relative overflow-hidden shrink-0">
-      {product.imageUrl ? <img src={product.imageUrl} loading="lazy" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" /> : <div className="w-full h-full flex items-center justify-center text-3xl opacity-10">👕</div>}
-      <div className="absolute top-2 left-2 md:top-3 md:left-3 px-1.5 py-0.5 md:px-2 bg-ios-accent text-white rounded-lg text-[7px] md:text-[8px] font-black uppercase shadow-sm">{product.size}</div>
+      {product.imageUrl ? <img src={product.imageUrl} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> : <div className="w-full h-full flex items-center justify-center text-4xl opacity-10">👕</div>}
+      <div className="absolute top-3 left-3 px-2 py-0.5 bg-ios-accent/90 backdrop-blur-md text-white rounded-lg text-[9px] font-bold uppercase shadow-sm">{product.size}</div>
     </div>
-    <div className="p-3 md:p-5 flex-1 flex flex-col justify-between gap-1">
-      <p className="font-black text-[9px] md:text-[10px] truncate uppercase tracking-tight text-ios-primary">{product.name}</p>
-      <div className="flex justify-between items-center mt-1">
-        <p className="text-ios-accent font-black text-[10px] md:text-[11px]">₸{product.price.toLocaleString()}</p>
-        <div className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full shadow-sm ${product.status === 'available' ? 'bg-green-500' : product.status === 'reserved' ? 'bg-amber-500' : 'bg-gray-400'}`}></div>
+
+    <div className="p-4 flex-1 flex flex-col justify-between gap-2">
+      <p className="font-bold text-xs truncate text-ios-primary leading-tight">{product.name}</p>
+      <div className="flex justify-between items-center">
+        <p className="text-ios-accent font-bold text-sm">₸{product.price.toLocaleString()}</p>
+        <div className={`w-2 h-2 rounded-full shadow-sm ${product.status === 'available' ? 'bg-green-500' : product.status === 'reserved' ? 'bg-amber-500' : 'bg-gray-400'}`}></div>
       </div>
     </div>
-  </div>
+  </Card>
 ));
 
 const Inventory: React.FC = () => {
@@ -189,30 +198,38 @@ const Inventory: React.FC = () => {
       )}
 
       {/* INVENTORY HEADER */}
-      <div className="bg-ios-card p-6 rounded-[2.5rem] border border-ios shadow-ios flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="flex items-center gap-6 w-full md:w-auto">
-          <div className="w-14 h-14 bg-ios-accent rounded-2xl flex items-center justify-center text-white text-3xl shadow-xl shrink-0">📦</div>
+      <Card className="flex flex-col md:flex-row items-center justify-between gap-6 !p-5">
+        <div className="flex items-center gap-5 w-full md:w-auto">
+          <div className="w-12 h-12 bg-ios-accent rounded-xl flex items-center justify-center text-white text-2xl shadow-lg shrink-0">📦</div>
           <div>
-            <h2 className="text-2xl font-black text-ios-primary tracking-tight">Склад</h2>
-            <p className="text-[9px] font-black text-ios-secondary uppercase tracking-widest">Позиций: {products.length}</p>
+            <Title className="text-2xl">Склад</Title>
+            <Caption>Позиций: {products.length}</Caption>
           </div>
         </div>
-        <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-1">
+        <div className="flex gap-3 w-full md:w-auto overflow-x-auto no-scrollbar pb-1">
           <input
             type="text"
             placeholder="Поиск..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 min-w-[120px] bg-ios-sub border-none rounded-2xl px-5 py-3 text-xs font-bold outline-none"
+            className="flex-1 min-w-[140px] bg-ios-sub border-none rounded-xl px-4 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-ios-accent/20 transition-all"
           />
-          <button onClick={() => setShowManualAdd(true)} className="bg-ios-sub text-ios-primary px-5 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-ios shrink-0">
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={() => setShowManualAdd(true)}
+            className="shrink-0 font-bold"
+          >
             + Руч.
-          </button>
-          <button onClick={() => fileInputRef.current?.click()} className="bg-ios-accent text-white px-5 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shrink-0 flex items-center gap-2">
-            <span>📷</span>
-          </button>
+          </Button>
+          <Button
+            onClick={() => fileInputRef.current?.click()}
+            className="shrink-0 shadow-lg"
+            icon={<span>📷</span>}
+          >
+          </Button>
         </div>
-      </div>
+      </Card>
 
       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
 
